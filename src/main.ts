@@ -7,6 +7,10 @@ import { renderKpiSummary } from './components/kpi-summary';
 import { getNextUnloadedPage, renderPaginationControls } from './components/pagination-controls';
 import { announceComparisonStatus, renderComparisonTray } from './components/comparison-tray';
 import {
+  closeComparisonSection,
+  renderComparisonSection,
+} from './components/comparison-section';
+import {
   appState,
   appendLoadedPage,
   beginLoading,
@@ -31,6 +35,7 @@ import { initTheme } from './utils/theme';
 
 let activeRequest: AbortController | null = null;
 let isLoadingAllRemaining = false;
+let isComparisonOpen = false;
 
 function refreshIcons(): void {
   createIcons({
@@ -114,6 +119,29 @@ function renderApp(): void {
     onLoadAllRemaining: () => void loadAllRemainingPages(),
     onRetryPage: (page) => void loadPluginPage(page, true),
   });
+
+  const comparisonSection = document.getElementById('comparison-section');
+  if (isComparisonOpen) {
+    if (comparisonSection) {
+      comparisonSection.hidden = false;
+      renderComparisonSection(appState, {
+        onClose: () => handleCloseComparison(),
+        onSetSubject: (slug) => {
+          setComparisonSubject(slug);
+          renderApp();
+        },
+        onRemoveCompetitor: (slug) => {
+          removeCompetitor(slug);
+          renderApp();
+        },
+      });
+    }
+  } else {
+    if (comparisonSection) {
+      comparisonSection.hidden = true;
+    }
+  }
+
   renderComparisonTray(appState);
   refreshIcons();
 }
@@ -490,12 +518,26 @@ function initControls(): void {
 
   document.addEventListener('clear-comparison', () => {
     clearComparison();
+    if (isComparisonOpen) {
+      handleCloseComparison();
+    }
     announceComparisonStatus('All comparison selections cleared.');
     renderApp();
   });
 
   document.addEventListener('open-comparison', () => {
     void handleOpenComparison();
+  });
+
+  document.addEventListener('close-comparison', () => {
+    handleCloseComparison();
+  });
+
+  // Global Escape key listener to close comparison workspace if open
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isComparisonOpen) {
+      handleCloseComparison();
+    }
   });
 
   // Pagination Custom Events
@@ -510,6 +552,13 @@ function initControls(): void {
   document.addEventListener('load-all-plugin-pages', () => {
     void loadAllRemainingPages();
   });
+}
+
+function handleCloseComparison(): void {
+  isComparisonOpen = false;
+  closeComparisonSection();
+  renderApp();
+  announceComparisonStatus('Comparison workspace closed.');
 }
 
 async function handleOpenComparison(): Promise<void> {
@@ -547,8 +596,6 @@ async function handleOpenComparison(): Promise<void> {
       }
     } catch (err) {
       console.error('Error fetching missing plugins for comparison:', err);
-    } finally {
-      renderApp();
     }
   }
 
@@ -556,6 +603,18 @@ async function handleOpenComparison(): Promise<void> {
   announceComparisonStatus(
     `Comparison ready with ${loadedCount} of ${allSlugs.length} plugins.`
   );
+
+  isComparisonOpen = true;
+  renderApp();
+
+  const comparisonSection = document.getElementById('comparison-section');
+  if (comparisonSection) {
+    comparisonSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Focus comparison heading for keyboard users
+  const heading = document.getElementById('comparison-heading');
+  heading?.focus({ preventScroll: true });
 
   document.dispatchEvent(
     new CustomEvent('comparison-ready', {
