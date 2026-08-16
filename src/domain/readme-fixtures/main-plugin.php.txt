@@ -1,0 +1,28 @@
+<?php
+/**
+ * Plugin Name: WP Form Pulse
+ * Plugin URI: https://example.com/wp-form-pulse
+ * Description: Lightweight and responsive form builder for WordPress with anti-spam protection.
+ * Version: 2.4.1
+ * Requires at least: 5.8
+ * Requires PHP: 7.4
+ * Author: WP Pulse Team
+ * Author URI: https://example.com
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: wp-form-pulse
+ * Domain Path: /languages
+ * Network: false
+ * Update URI: https://example.com/update
+ * Requires Plugins: woocommerce
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Plugin execution logic...
+function wp_form_pulse_init() {
+    // Strictly text parsed, never executed.
+}
+add_action('plugins_loaded', 'wp_form_pulse_init');

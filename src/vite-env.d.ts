@@ -1,6 +1,12 @@
 /// <reference types="vite/client" />
 /// <reference types="bun-types/test.d.ts" />
 
+declare const Bun: {
+  file: (path: string) => {
+    text: () => Promise<string>;
+  };
+};
+
 declare module '*vite.config.js' {
   export const COLLECTION_FIELDS: Record<string, number>;
   export const SLUG_FIELDS: Record<string, number>;
