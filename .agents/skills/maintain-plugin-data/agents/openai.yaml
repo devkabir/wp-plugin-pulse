@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain Plugin Data"
+  short_description: "Build and maintain this Bun and Vite app"
+  default_prompt: "Use $maintain-plugin-data to implement and verify a change in this repository."
