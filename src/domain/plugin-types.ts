@@ -122,6 +122,11 @@ export interface AppError {
   statusCode?: number;
 }
 
+export interface ComparisonState {
+  subjectSlug: string | null;
+  competitorSlugs: string[];
+}
+
 export interface AppState {
   plugins: NormalizedPlugin[];
   activeQuery: PluginQuery;
@@ -139,6 +144,7 @@ export interface AppState {
   loadedPages: number[];
   loadingMorePage: number | null;
   loadMoreError: { page: number; message: string; error?: AppError } | null;
+  comparison: ComparisonState;
 }
 
 export interface KpiSummaryMetrics {

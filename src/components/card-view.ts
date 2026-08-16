@@ -206,7 +206,7 @@ export function renderCardView(
   if (state.status === 'loading' && state.isBackgroundRefreshing && state.plugins.length > 0) {
     cardsWrapper?.classList.add('is-stale');
     const visiblePlugins = selectVisiblePlugins(state);
-    container.replaceChildren(...visiblePlugins.map(createPluginCard));
+    container.replaceChildren(...visiblePlugins.map((p) => createPluginCard(p, state.comparison)));
     updateResultsMeta(state, visiblePlugins.length);
     return;
   }
@@ -258,7 +258,7 @@ export function renderCardView(
   }
 
   // Render cards grid
-  container.replaceChildren(...visiblePlugins.map(createPluginCard));
+  container.replaceChildren(...visiblePlugins.map((p) => createPluginCard(p, state.comparison)));
   updateResultsMeta(state, visiblePlugins.length);
 }
 

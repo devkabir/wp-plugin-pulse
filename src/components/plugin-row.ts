@@ -1,4 +1,4 @@
-import type { NormalizedPlugin } from '../domain/plugin-types';
+import type { ComparisonState, NormalizedPlugin } from '../domain/plugin-types';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -28,9 +28,22 @@ function createCell(className?: string): HTMLTableCellElement {
   return cell;
 }
 
-export function createPluginRow(plugin: NormalizedPlugin): HTMLTableRowElement {
+export function createPluginRow(
+  plugin: NormalizedPlugin,
+  comparison?: ComparisonState
+): HTMLTableRowElement {
   const row = document.createElement('tr');
   const slugId = plugin.slug || plugin.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+
+  const isSubject = comparison?.subjectSlug === plugin.slug;
+  const isCompetitor = Boolean(comparison?.competitorSlugs.includes(plugin.slug));
+  const competitorLimitReached = (comparison?.competitorSlugs.length ?? 0) >= 3;
+
+  if (isSubject) {
+    row.classList.add('is-subject');
+  } else if (isCompetitor) {
+    row.classList.add('is-competitor');
+  }
 
   // ==========================================
   // Column 1: Plugin
@@ -127,8 +140,72 @@ export function createPluginRow(plugin: NormalizedPlugin): HTMLTableRowElement {
   detailsToggle.type = 'button';
   detailsToggle.setAttribute('aria-expanded', 'false');
   detailsToggle.setAttribute('aria-controls', `details-${slugId}`);
+
+  const subjectBtn = el(
+    'button',
+    `btn-comparison-action btn-set-subject ${isSubject ? 'btn-set-subject--active' : ''}`,
+    isSubject ? '★ My Plugin' : 'Set as My Plugin'
+  );
+  subjectBtn.type = 'button';
+  subjectBtn.setAttribute('data-slug', plugin.slug);
+  subjectBtn.setAttribute('aria-pressed', isSubject ? 'true' : 'false');
+  subjectBtn.setAttribute(
+    'aria-label',
+    isSubject ? `Remove ${plugin.name} as My Plugin` : `Set ${plugin.name} as My Plugin`
+  );
+  subjectBtn.setAttribute(
+    'title',
+    isSubject ? 'Currently selected as My Plugin. Click to deselect.' : 'Set as primary plugin for comparison'
+  );
+  subjectBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    subjectBtn.dispatchEvent(
+      new CustomEvent('select-subject', {
+        bubbles: true,
+        detail: { slug: isSubject ? null : plugin.slug, name: plugin.name },
+      })
+    );
+  });
+
+  const competitorBtn = el(
+    'button',
+    `btn-comparison-action btn-set-competitor ${isCompetitor ? 'btn-set-competitor--active' : ''}`,
+    isCompetitor ? '✓ In comparison' : 'Add to comparison'
+  );
+  competitorBtn.type = 'button';
+  competitorBtn.setAttribute('data-slug', plugin.slug);
+  competitorBtn.setAttribute('aria-pressed', isCompetitor ? 'true' : 'false');
+  if (isSubject) {
+    competitorBtn.disabled = true;
+    competitorBtn.setAttribute('aria-disabled', 'true');
+    competitorBtn.title = 'Subject plugin cannot also be added as a competitor';
+  } else if (!isCompetitor && competitorLimitReached) {
+    competitorBtn.disabled = true;
+    competitorBtn.setAttribute('aria-disabled', 'true');
+    competitorBtn.title = 'Maximum 3 competitors already selected';
+  } else {
+    competitorBtn.title = isCompetitor ? 'Remove from comparison' : 'Add to comparison';
+  }
+  competitorBtn.setAttribute(
+    'aria-label',
+    isCompetitor ? `Remove ${plugin.name} from comparison` : `Add ${plugin.name} to comparison`
+  );
+  competitorBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    competitorBtn.dispatchEvent(
+      new CustomEvent('toggle-competitor', {
+        bubbles: true,
+        detail: { slug: plugin.slug, name: plugin.name },
+      })
+    );
+  });
+
+  const actionsGroup = el('div', 'plugin-row-actions');
+  actionsGroup.setAttribute('role', 'group');
+  actionsGroup.setAttribute('aria-label', `Comparison actions for ${plugin.name}`);
+  actionsGroup.append(subjectBtn, competitorBtn);
   
-  metaRow.append(versionBadge, freshnessBadge, detailsToggle);
+  metaRow.append(versionBadge, freshnessBadge, detailsToggle, actionsGroup);
   infoDiv.append(metaRow);
 
   const detailsPanel = el('div', 'plugin-details');

@@ -1,5 +1,6 @@
 import { classifyError } from '../domain/error-classifier';
 import type { ActiveView, AppState, NormalizedPlugin, NormalizedPluginCollection, PluginQuery, SortDirection, SortKey } from '../domain/plugin-types';
+import { getStoredComparison, MAX_COMPETITORS, setStoredComparison } from '../utils/comparison-preference';
 import { getStoredView, setStoredView } from '../utils/view-preference';
 
 export function normalizeQuery(query: PluginQuery | string): PluginQuery {
@@ -26,6 +27,7 @@ export const appState: AppState = {
   loadedPages: [],
   loadingMorePage: null,
   loadMoreError: null,
+  comparison: getStoredComparison(),
 };
 
 /**
@@ -166,3 +168,59 @@ export function setActiveView(view: ActiveView): void {
   appState.activeView = view;
   setStoredView(view);
 }
+
+export function setComparisonSubject(slug: string | null): void {
+  const normSlug = typeof slug === 'string' && slug.trim().length > 0 ? slug.trim() : null;
+  appState.comparison.subjectSlug = normSlug;
+  if (normSlug) {
+    appState.comparison.competitorSlugs = appState.comparison.competitorSlugs.filter(
+      (s) => s !== normSlug
+    );
+  }
+  setStoredComparison(appState.comparison);
+}
+
+export function toggleCompetitor(slug: string): boolean {
+  const normSlug = typeof slug === 'string' ? slug.trim() : '';
+  if (!normSlug) return false;
+
+  // Invariant: subject cannot also be a competitor
+  if (appState.comparison.subjectSlug === normSlug) {
+    return false;
+  }
+
+  if (appState.comparison.competitorSlugs.includes(normSlug)) {
+    appState.comparison.competitorSlugs = appState.comparison.competitorSlugs.filter(
+      (s) => s !== normSlug
+    );
+    setStoredComparison(appState.comparison);
+    return true;
+  }
+
+  // Invariant: maximum three competitors
+  if (appState.comparison.competitorSlugs.length >= MAX_COMPETITORS) {
+    return false;
+  }
+
+  appState.comparison.competitorSlugs = [...appState.comparison.competitorSlugs, normSlug];
+  setStoredComparison(appState.comparison);
+  return true;
+}
+
+export function removeCompetitor(slug: string): void {
+  const normSlug = typeof slug === 'string' ? slug.trim() : '';
+  if (!normSlug) return;
+  appState.comparison.competitorSlugs = appState.comparison.competitorSlugs.filter(
+    (s) => s !== normSlug
+  );
+  setStoredComparison(appState.comparison);
+}
+
+export function clearComparison(): void {
+  appState.comparison = {
+    subjectSlug: null,
+    competitorSlugs: [],
+  };
+  setStoredComparison(appState.comparison);
+}
+

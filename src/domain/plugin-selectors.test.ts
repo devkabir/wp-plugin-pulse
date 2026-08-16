@@ -94,6 +94,10 @@ describe('plugin filtering', () => {
     loadedPages: [1],
     loadingMorePage: null,
     loadMoreError: null,
+    comparison: {
+      subjectSlug: null,
+      competitorSlugs: [],
+    },
   };
 
   test('returns all plugins when query is empty', () => {

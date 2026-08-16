@@ -59,7 +59,7 @@ export function renderPluginTable(
   if (state.status === 'loading' && state.isBackgroundRefreshing && state.plugins.length > 0) {
     tableWrapper?.classList.add('is-stale');
     const visiblePlugins = selectVisiblePlugins(state);
-    tbody.replaceChildren(...visiblePlugins.map(createPluginRow));
+    tbody.replaceChildren(...visiblePlugins.map((p) => createPluginRow(p, state.comparison)));
     updateResultsMeta(state, visiblePlugins.length);
     return;
   }
@@ -111,7 +111,7 @@ export function renderPluginTable(
   }
 
   // Render plugin rows
-  tbody.replaceChildren(...visiblePlugins.map(createPluginRow));
+  tbody.replaceChildren(...visiblePlugins.map((p) => createPluginRow(p, state.comparison)));
   updateResultsMeta(state, visiblePlugins.length);
 }
 

@@ -1,26 +1,32 @@
 import './style.css';
 import { createIcons, Activity, Search, Sun, Moon, Filter, X, Table, LayoutGrid } from 'lucide';
-import { fetchPluginCollection } from './api/plugins';
+import { fetchPluginBySlug, fetchPluginCollection } from './api/plugins';
 import { renderPluginTable } from './components/plugin-table';
 import { renderCardView } from './components/card-view';
 import { renderKpiSummary } from './components/kpi-summary';
 import { getNextUnloadedPage, renderPaginationControls } from './components/pagination-controls';
+import { announceComparisonStatus, renderComparisonTray } from './components/comparison-tray';
 import {
   appState,
   appendLoadedPage,
   beginLoading,
   beginLoadingPage,
+  clearComparison,
   clearQuery,
   failLoading,
   failLoadingPage,
   finishLoading,
+  mergePluginCollections,
   normalizeQuery,
+  removeCompetitor,
   setActiveView,
+  setComparisonSubject,
   setQuery,
   setSorting,
+  toggleCompetitor,
   toggleSort,
 } from './state/app-state';
-import type { ActiveView, PluginQuery, QueryMode, SortDirection, SortKey } from './domain/plugin-types';
+import type { ActiveView, NormalizedPlugin, PluginQuery, QueryMode, SortDirection, SortKey } from './domain/plugin-types';
 import { initTheme } from './utils/theme';
 
 let activeRequest: AbortController | null = null;
@@ -108,6 +114,7 @@ function renderApp(): void {
     onLoadAllRemaining: () => void loadAllRemainingPages(),
     onRetryPage: (page) => void loadPluginPage(page, true),
   });
+  renderComparisonTray(appState);
   refreshIcons();
 }
 
@@ -421,6 +428,76 @@ function initControls(): void {
     void loadPlugins({ mode: 'tag', value: tag });
   });
 
+  // Comparison Selection Events
+  document.addEventListener('select-subject', (event) => {
+    const customEvent = event as CustomEvent<{ slug: string | null; name?: string }>;
+    const slug = customEvent.detail?.slug ?? null;
+    const name = customEvent.detail?.name || (slug ? slug : 'Plugin');
+
+    setComparisonSubject(slug);
+    if (slug) {
+      announceComparisonStatus(`${name} set as My Plugin.`);
+    } else {
+      announceComparisonStatus('My Plugin deselected.');
+    }
+    renderApp();
+  });
+
+  document.addEventListener('toggle-competitor', (event) => {
+    const customEvent = event as CustomEvent<{ slug: string; name?: string }>;
+    const slug = customEvent.detail?.slug;
+    if (!slug) return;
+    const name = customEvent.detail?.name || slug;
+
+    if (appState.comparison.subjectSlug === slug) {
+      announceComparisonStatus('Subject plugin cannot also be added as a competitor.');
+      return;
+    }
+
+    const isCurrentlyCompetitor = appState.comparison.competitorSlugs.includes(slug);
+    if (!isCurrentlyCompetitor && appState.comparison.competitorSlugs.length >= 3) {
+      announceComparisonStatus('Cannot add more than 3 competitors to comparison.');
+      return;
+    }
+
+    const success = toggleCompetitor(slug);
+    if (success) {
+      if (isCurrentlyCompetitor) {
+        announceComparisonStatus(
+          `${name} removed from comparison (${appState.comparison.competitorSlugs.length} of 3 competitors).`
+        );
+      } else {
+        announceComparisonStatus(
+          `${name} added to comparison (${appState.comparison.competitorSlugs.length} of 3 competitors).`
+        );
+      }
+      renderApp();
+    }
+  });
+
+  document.addEventListener('remove-competitor', (event) => {
+    const customEvent = event as CustomEvent<{ slug: string; name?: string }>;
+    const slug = customEvent.detail?.slug;
+    if (!slug) return;
+    const name = customEvent.detail?.name || slug;
+
+    removeCompetitor(slug);
+    announceComparisonStatus(
+      `${name} removed from comparison (${appState.comparison.competitorSlugs.length} of 3 competitors).`
+    );
+    renderApp();
+  });
+
+  document.addEventListener('clear-comparison', () => {
+    clearComparison();
+    announceComparisonStatus('All comparison selections cleared.');
+    renderApp();
+  });
+
+  document.addEventListener('open-comparison', () => {
+    void handleOpenComparison();
+  });
+
   // Pagination Custom Events
   document.addEventListener('load-plugin-page', (event) => {
     const customEvent = event as CustomEvent<{ page: number }>;
@@ -433,6 +510,62 @@ function initControls(): void {
   document.addEventListener('load-all-plugin-pages', () => {
     void loadAllRemainingPages();
   });
+}
+
+async function handleOpenComparison(): Promise<void> {
+  const { subjectSlug, competitorSlugs } = appState.comparison;
+  if (!subjectSlug || competitorSlugs.length === 0) return;
+
+  const allSlugs = [subjectSlug, ...competitorSlugs];
+  const missingSlugs = allSlugs.filter(
+    (slug) => !appState.plugins.some((p) => p.slug === slug)
+  );
+
+  if (missingSlugs.length > 0) {
+    announceComparisonStatus(
+      `Fetching ${missingSlugs.length} missing plugin record${missingSlugs.length > 1 ? 's' : ''} before comparison opens…`
+    );
+    const compareBtn = document.getElementById('btn-tray-compare') as HTMLButtonElement | null;
+    if (compareBtn) {
+      compareBtn.disabled = true;
+      compareBtn.textContent = 'Loading…';
+    }
+
+    try {
+      const results = await Promise.allSettled(
+        missingSlugs.map((slug) => fetchPluginBySlug(slug))
+      );
+      const fetchedPlugins: NormalizedPlugin[] = [];
+      for (const res of results) {
+        if (res.status === 'fulfilled' && res.value) {
+          fetchedPlugins.push(res.value);
+        }
+      }
+
+      if (fetchedPlugins.length > 0) {
+        appState.plugins = mergePluginCollections(appState.plugins, fetchedPlugins);
+      }
+    } catch (err) {
+      console.error('Error fetching missing plugins for comparison:', err);
+    } finally {
+      renderApp();
+    }
+  }
+
+  const loadedCount = appState.plugins.filter((p) => allSlugs.includes(p.slug)).length;
+  announceComparisonStatus(
+    `Comparison ready with ${loadedCount} of ${allSlugs.length} plugins.`
+  );
+
+  document.dispatchEvent(
+    new CustomEvent('comparison-ready', {
+      detail: {
+        subjectSlug,
+        competitorSlugs,
+        plugins: appState.plugins.filter((p) => allSlugs.includes(p.slug)),
+      },
+    })
+  );
 }
 
 initTheme();
