@@ -56,6 +56,20 @@ function updateSortSelect(key: SortKey, direction: SortDirection): void {
   }
 }
 
+function updateBusyState(isBusy: boolean): void {
+  const tableWrapper = document.getElementById('table-view-wrapper');
+  const cardsWrapper = document.getElementById('cards-view-wrapper');
+  const tagSubmit = document.getElementById('tag-submit') as HTMLButtonElement | null;
+
+  tableWrapper?.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+  cardsWrapper?.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+
+  if (tagSubmit) {
+    tagSubmit.disabled = isBusy;
+    tagSubmit.setAttribute('aria-disabled', isBusy ? 'true' : 'false');
+  }
+}
+
 function renderApp(): void {
   const tableWrapper = document.getElementById('table-view-wrapper');
   const cardsWrapper = document.getElementById('cards-view-wrapper');
@@ -64,18 +78,23 @@ function renderApp(): void {
 
   updateViewControls(appState.activeView);
   updateSortSelect(appState.sortKey, appState.sortDirection);
+  updateBusyState(appState.status === 'loading');
+
+  const onRetry = (): void => {
+    void loadPlugins(appState.failedTag || appState.activeTag, false);
+  };
 
   // Maintain exactly ONE active interactive view in the accessibility tree
   if (appState.activeView === 'table') {
     if (tableWrapper) tableWrapper.hidden = false;
     if (cardsWrapper) cardsWrapper.hidden = true;
     cardsContainer?.replaceChildren();
-    renderPluginTable(appState);
+    renderPluginTable(appState, undefined, onRetry);
   } else {
     if (cardsWrapper) cardsWrapper.hidden = false;
     if (tableWrapper) tableWrapper.hidden = true;
     tableBody?.replaceChildren();
-    renderCardView(appState);
+    renderCardView(appState, undefined, onRetry);
   }
 
   renderKpiSummary(appState);
@@ -87,13 +106,22 @@ function renderApp(): void {
   refreshIcons();
 }
 
-async function loadPlugins(tag = 'form-builder'): Promise<void> {
+async function loadPlugins(tag = 'form-builder', isRefresh = false): Promise<void> {
+  // Guard against duplicate matching submissions while a matching request is active
+  if (
+    appState.status === 'loading' &&
+    appState.activeTag.toLowerCase() === tag.trim().toLowerCase() &&
+    !isRefresh
+  ) {
+    return;
+  }
+
   activeRequest?.abort();
   const request = new AbortController();
   activeRequest = request;
   isLoadingAllRemaining = false;
 
-  beginLoading(tag);
+  beginLoading(tag, isRefresh);
   renderApp();
 
   try {
@@ -104,10 +132,13 @@ async function loadPlugins(tag = 'form-builder'): Promise<void> {
   } catch (error) {
     if (request.signal.aborted || request !== activeRequest) return;
     console.error(error);
-    failLoading(error);
+    failLoading(error, tag);
     renderApp();
   } finally {
-    if (request === activeRequest) activeRequest = null;
+    if (request === activeRequest) {
+      activeRequest = null;
+      updateBusyState(false);
+    }
   }
 }
 
@@ -191,6 +222,7 @@ function initControls(): void {
   const submitTag = (): void => {
     const tag = tagInput?.value.trim();
     if (!tag) return;
+    if (appState.status === 'loading' && appState.activeTag.toLowerCase() === tag.toLowerCase()) return;
     setActiveChip(null);
     void loadPlugins(tag);
   };
@@ -201,15 +233,22 @@ function initControls(): void {
     if (!(target instanceof Element)) return;
     const chip = target.closest<HTMLButtonElement>('.chip');
     if (!chip?.dataset.tag) return;
-    setActiveChip(chip.dataset.tag);
+    const tag = chip.dataset.tag;
+    if (appState.status === 'loading' && appState.activeTag.toLowerCase() === tag.toLowerCase()) return;
+    setActiveChip(tag);
     if (tagInput) tagInput.value = '';
-    void loadPlugins(chip.dataset.tag);
+    void loadPlugins(tag);
   });
 
   // Tag Search Input
   document.getElementById('tag-submit')?.addEventListener('click', submitTag);
   tagInput?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') submitTag();
+  });
+
+  // Retry event
+  document.addEventListener('retry-plugin-request', () => {
+    void loadPlugins(appState.failedTag || appState.activeTag, false);
   });
 
   // Client-Side Search Filter Input

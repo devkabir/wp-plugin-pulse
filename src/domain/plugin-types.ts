@@ -107,6 +107,14 @@ export interface NormalizedPluginCollection {
   totalResults: number;
 }
 
+export type ErrorKind = 'network' | 'http' | 'invalid_response' | 'unknown';
+
+export interface AppError {
+  kind: ErrorKind;
+  message: string;
+  statusCode?: number;
+}
+
 export interface AppState {
   plugins: NormalizedPlugin[];
   activeTag: string;
@@ -115,13 +123,15 @@ export interface AppState {
   sortDirection: SortDirection;
   activeView: ActiveView;
   status: LoadStatus;
-  error: string | null;
+  isBackgroundRefreshing: boolean;
+  error: AppError | null;
+  failedTag: string | null;
   page: number;
   totalPages: number;
   totalResults: number;
   loadedPages: number[];
   loadingMorePage: number | null;
-  loadMoreError: { page: number; message: string } | null;
+  loadMoreError: { page: number; message: string; error?: AppError } | null;
 }
 
 export interface KpiSummaryMetrics {

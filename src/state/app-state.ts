@@ -1,3 +1,4 @@
+import { classifyError } from '../domain/error-classifier';
 import type { ActiveView, AppState, NormalizedPlugin, NormalizedPluginCollection, SortDirection, SortKey } from '../domain/plugin-types';
 import { getStoredView, setStoredView } from '../utils/view-preference';
 
@@ -9,7 +10,9 @@ export const appState: AppState = {
   sortDirection: 'desc',
   activeView: getStoredView(),
   status: 'idle',
+  isBackgroundRefreshing: false,
   error: null,
+  failedTag: null,
   page: 1,
   totalPages: 1,
   totalResults: 0,
@@ -48,9 +51,17 @@ export function mergePluginCollections(
   return merged;
 }
 
-export function beginLoading(tag: string): void {
+export function beginLoading(tag: string, isRefresh = false): void {
+  if (isRefresh && appState.plugins.length > 0 && appState.activeTag === tag) {
+    appState.isBackgroundRefreshing = true;
+    appState.status = 'loading';
+    appState.error = null;
+    return;
+  }
+
   appState.activeTag = tag;
   appState.status = 'loading';
+  appState.isBackgroundRefreshing = false;
   appState.error = null;
   appState.plugins = [];
   appState.loadedPages = [];
@@ -68,14 +79,18 @@ export function finishLoading(collection: NormalizedPluginCollection): void {
   appState.totalResults = collection.totalResults;
   appState.loadedPages = [collection.page];
   appState.status = 'ready';
+  appState.isBackgroundRefreshing = false;
   appState.error = null;
+  appState.failedTag = null;
   appState.loadingMorePage = null;
   appState.loadMoreError = null;
 }
 
-export function failLoading(error: unknown): void {
+export function failLoading(error: unknown, tag?: string): void {
   appState.status = 'error';
-  appState.error = error instanceof Error ? error.message : 'Unable to load plugins.';
+  appState.isBackgroundRefreshing = false;
+  appState.error = classifyError(error);
+  appState.failedTag = tag ?? appState.activeTag;
   appState.loadingMorePage = null;
   appState.loadMoreError = null;
 }
@@ -102,8 +117,8 @@ export function appendLoadedPage(collection: NormalizedPluginCollection): void {
 
 export function failLoadingPage(page: number, error: unknown): void {
   appState.loadingMorePage = null;
-  const message = error instanceof Error ? error.message : `Failed to load page ${page}.`;
-  appState.loadMoreError = { page, message };
+  const appErr = classifyError(error);
+  appState.loadMoreError = { page, message: appErr.message, error: appErr };
 }
 
 export function clearLoadMoreError(): void {

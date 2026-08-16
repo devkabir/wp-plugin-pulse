@@ -1,11 +1,11 @@
-import type { AppState } from '../domain/plugin-types';
+import type { AppError, AppState } from '../domain/plugin-types';
 import { selectVisiblePlugins } from '../domain/plugin-selectors';
 import { createPluginCard } from './plugin-card';
 import { updateResultsMeta } from '../utils/results-meta';
 
-function createCardSkeletons(): DocumentFragment {
+function createCardSkeletons(count = 6): DocumentFragment {
   const frag = document.createDocumentFragment();
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < count; i++) {
     const card = document.createElement('article');
     card.className = 'plugin-card plugin-card--skeleton';
     card.setAttribute('aria-hidden', 'true');
@@ -14,9 +14,14 @@ function createCardSkeletons(): DocumentFragment {
     header.className = 'plugin-card__skeleton-header';
     const icon = document.createElement('div');
     icon.className = 'plugin-card__skeleton-icon';
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'plugin-card__skeleton-title-wrap';
     const title = document.createElement('div');
     title.className = 'plugin-card__skeleton-title';
-    header.append(icon, title);
+    const author = document.createElement('div');
+    author.className = 'plugin-card__skeleton-author';
+    titleWrap.append(title, author);
+    header.append(icon, titleWrap);
 
     const desc = document.createElement('div');
     desc.className = 'plugin-card__skeleton-desc';
@@ -60,24 +65,48 @@ function createCardStatusState(
 export function createCardLoadingState(): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'cards-grid';
-  wrap.append(createCardSkeletons());
+  wrap.append(createCardSkeletons(6));
   return wrap;
 }
 
-export function createCardErrorState(): HTMLElement {
+export function createCardErrorState(
+  error: AppError | null,
+  tag: string,
+  onRetry: () => void
+): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'card-status-box card-status-box--error';
 
   const icon = document.createElement('div');
   icon.className = 'card-status-icon';
-  icon.textContent = '⚠';
+  icon.textContent = error?.kind === 'network' ? '⚡' : '⚠';
   icon.setAttribute('aria-hidden', 'true');
+
+  const heading = document.createElement('h3');
+  heading.className = 'card-status-title';
+  if (error?.kind === 'network') {
+    heading.textContent = 'Network Connection Error';
+  } else if (error?.kind === 'invalid_response') {
+    heading.textContent = 'Invalid API Response';
+  } else if (error?.kind === 'http') {
+    heading.textContent = error.statusCode ? `Server Error (HTTP ${error.statusCode})` : 'Server Error';
+  } else {
+    heading.textContent = 'Failed to Load Plugins';
+  }
 
   const text = document.createElement('p');
   text.className = 'card-status-message';
-  text.textContent = 'Unable to load plugins. Please try again.';
+  text.textContent = error?.message || `Unable to load plugins for tag “${tag}”. Please try again.`;
 
-  wrap.append(icon, text);
+  const retryBtn = document.createElement('button');
+  retryBtn.type = 'button';
+  retryBtn.className = 'btn-retry-tag';
+  retryBtn.id = 'btn-retry-cards';
+  retryBtn.setAttribute('aria-label', `Retry loading plugins for tag ${tag}`);
+  retryBtn.textContent = 'Retry Request';
+  retryBtn.addEventListener('click', onRetry);
+
+  wrap.append(icon, heading, text, retryBtn);
   return createCardStatusState('card-status--error', wrap, 'alert');
 }
 
@@ -85,11 +114,20 @@ export function createCardEmptyTagState(tag: string): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'card-status-box card-status-box--empty';
 
+  const icon = document.createElement('div');
+  icon.className = 'card-status-icon';
+  icon.textContent = '📂';
+  icon.setAttribute('aria-hidden', 'true');
+
+  const heading = document.createElement('h3');
+  heading.className = 'card-status-title';
+  heading.textContent = 'No Plugins Found';
+
   const text = document.createElement('p');
   text.className = 'card-status-message';
   text.textContent = `No plugins found in the WordPress.org directory for tag “${tag}”.`;
 
-  wrap.append(text);
+  wrap.append(icon, heading, text);
   return createCardStatusState('card-status--empty-tag', wrap);
 }
 
@@ -97,34 +135,67 @@ export function createCardNoMatchesState(query: string, onClear: () => void): HT
   const wrap = document.createElement('div');
   wrap.className = 'card-status-box card-status-box--no-matches';
 
+  const icon = document.createElement('div');
+  icon.className = 'card-status-icon';
+  icon.textContent = '🔍';
+  icon.setAttribute('aria-hidden', 'true');
+
+  const heading = document.createElement('h3');
+  heading.className = 'card-status-title';
+  heading.textContent = 'No Matching Plugins';
+
   const text = document.createElement('p');
   text.className = 'card-status-message';
-  text.textContent = `No plugins matching “${query}” found.`;
+  text.textContent = `No loaded plugins matched your filter “${query}”.`;
 
   const clearBtn = document.createElement('button');
   clearBtn.type = 'button';
   clearBtn.className = 'btn-clear-filter';
-  clearBtn.textContent = 'Clear filter';
+  clearBtn.textContent = 'Clear Filter';
   clearBtn.addEventListener('click', onClear);
 
-  wrap.append(text, clearBtn);
+  wrap.append(icon, heading, text, clearBtn);
   return createCardStatusState('card-status--no-matches', wrap);
 }
 
-export function renderCardView(state: AppState, onClearFilter?: () => void): void {
+export function renderCardView(
+  state: AppState,
+  onClearFilter?: () => void,
+  onRetry?: () => void
+): void {
   const container = document.getElementById('plugins-cards');
+  const cardsWrapper = document.getElementById('cards-view-wrapper');
   if (!(container instanceof HTMLElement)) {
     throw new Error('Plugins card container (#plugins-cards) was not found.');
   }
 
+  // Background refresh: preserve existing rendered cards but mark wrapper as stale
+  if (state.status === 'loading' && state.isBackgroundRefreshing && state.plugins.length > 0) {
+    cardsWrapper?.classList.add('is-stale');
+    const visiblePlugins = selectVisiblePlugins(state);
+    container.replaceChildren(...visiblePlugins.map(createPluginCard));
+    updateResultsMeta(state, visiblePlugins.length);
+    return;
+  }
+
+  cardsWrapper?.classList.remove('is-stale');
+
+  // Fresh loading: show layout-matched skeleton cards
   if (state.status === 'loading') {
     container.replaceChildren(createCardLoadingState());
     updateResultsMeta(state, 0);
     return;
   }
 
+  // Error state: show error state with retry button
   if (state.status === 'error') {
-    container.replaceChildren(createCardErrorState());
+    container.replaceChildren(
+      createCardErrorState(
+        state.error,
+        state.failedTag || state.activeTag,
+        onRetry ?? (() => document.dispatchEvent(new CustomEvent('retry-plugin-request')))
+      )
+    );
     updateResultsMeta(state, 0);
     return;
   }
@@ -157,3 +228,4 @@ export function renderCardView(state: AppState, onClearFilter?: () => void): voi
   container.replaceChildren(...visiblePlugins.map(createPluginCard));
   updateResultsMeta(state, visiblePlugins.length);
 }
+

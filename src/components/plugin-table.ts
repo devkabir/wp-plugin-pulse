@@ -2,10 +2,10 @@ import type { AppState, SortKey } from '../domain/plugin-types';
 import { selectVisiblePlugins } from '../domain/plugin-selectors';
 import { createPluginRow } from './plugin-row';
 import {
-  createEmptyCollectionRow,
-  createErrorRow,
-  createLoadingRow,
-  createNoMatchesRow,
+  createTableEmptyTagRow,
+  createTableErrorRow,
+  createTableNoMatchesRow,
+  createTableSkeletons,
 } from './table-status-row';
 import { SORT_LABELS, updateResultsMeta } from '../utils/results-meta';
 
@@ -44,27 +44,51 @@ export function updateTableHeaders(state: AppState): void {
   });
 }
 
-export function renderPluginTable(state: AppState, onClearFilter?: () => void): void {
+export function renderPluginTable(
+  state: AppState,
+  onClearFilter?: () => void,
+  onRetry?: () => void
+): void {
   const tbody = document.getElementById('plugins-body');
+  const tableWrapper = document.getElementById('table-view-wrapper');
   if (!(tbody instanceof HTMLTableSectionElement)) throw new Error('Plugin table body was not found.');
 
   updateTableHeaders(state);
 
+  // Background refresh: preserve existing rendered rows but mark wrapper as stale
+  if (state.status === 'loading' && state.isBackgroundRefreshing && state.plugins.length > 0) {
+    tableWrapper?.classList.add('is-stale');
+    const visiblePlugins = selectVisiblePlugins(state);
+    tbody.replaceChildren(...visiblePlugins.map(createPluginRow));
+    updateResultsMeta(state, visiblePlugins.length);
+    return;
+  }
+
+  tableWrapper?.classList.remove('is-stale');
+
+  // Fresh loading: show layout-matched table skeletons
   if (state.status === 'loading') {
-    tbody.replaceChildren(createLoadingRow());
+    tbody.replaceChildren(createTableSkeletons(6));
     updateResultsMeta(state, 0);
     return;
   }
 
+  // Error state: show informative error row with operable retry button
   if (state.status === 'error') {
-    tbody.replaceChildren(createErrorRow());
+    tbody.replaceChildren(
+      createTableErrorRow(
+        state.error,
+        state.failedTag || state.activeTag,
+        onRetry ?? (() => document.dispatchEvent(new CustomEvent('retry-plugin-request')))
+      )
+    );
     updateResultsMeta(state, 0);
     return;
   }
 
   // Ready state: check if zero plugins loaded from API
   if (state.plugins.length === 0) {
-    tbody.replaceChildren(createEmptyCollectionRow(state.activeTag));
+    tbody.replaceChildren(createTableEmptyTagRow(state.activeTag));
     updateResultsMeta(state, 0);
     return;
   }
@@ -74,7 +98,7 @@ export function renderPluginTable(state: AppState, onClearFilter?: () => void): 
   // Ready state: check if filter returned zero matches
   if (visiblePlugins.length === 0) {
     tbody.replaceChildren(
-      createNoMatchesRow(state.query, () => {
+      createTableNoMatchesRow(state.query, () => {
         if (onClearFilter) {
           onClearFilter();
         } else {
@@ -86,7 +110,8 @@ export function renderPluginTable(state: AppState, onClearFilter?: () => void): 
     return;
   }
 
-  // Render plugins
+  // Render plugin rows
   tbody.replaceChildren(...visiblePlugins.map(createPluginRow));
   updateResultsMeta(state, visiblePlugins.length);
 }
+
