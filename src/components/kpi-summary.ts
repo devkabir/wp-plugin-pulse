@@ -17,9 +17,10 @@ interface KpiCardSpec {
 
 function buildCards(metrics: KpiSummaryMetrics): KpiCardSpec[] {
   const leader = metrics.topEstimatedInstallsLeader;
+  const isPartial = !metrics.isFullyLoaded;
   const shareDisplay =
     metrics.dominantPluginInstallShare !== null
-      ? `${metrics.dominantPluginInstallShare}% of all installs`
+      ? `${metrics.dominantPluginInstallShare}% of ${isPartial ? 'loaded' : 'all'} installs`
       : null;
 
   // Concentration tone: monopoly (≥50%) = warning, shared (<30%) = success
@@ -46,21 +47,27 @@ function buildCards(metrics: KpiSummaryMetrics): KpiCardSpec[] {
       id: 'kpi-crowded',
       label: 'How crowded?',
       value: `${metrics.totalResults} plugins`,
-      subValue:
-        metrics.totalLoaded < metrics.totalResults
-          ? `${metrics.totalLoaded} loaded — more exist`
-          : `${metrics.totalLoaded} loaded`,
-      helper:
-        'Total plugins tagged in this niche. More competition means harder discoverability on WordPress.org.',
+      subValue: isPartial
+        ? `${metrics.totalLoaded} loaded (${metrics.loadedPagesCount} of ${metrics.totalPages} pages)`
+        : `All ${metrics.totalLoaded} plugins loaded (${metrics.totalPages} ${metrics.totalPages === 1 ? 'page' : 'pages'})`,
+      helper: isPartial
+        ? `Total plugins tagged in this niche across ${metrics.totalPages} pages. Load all pages for the full collection.`
+        : 'Total plugins tagged in this niche. More competition means harder discoverability on WordPress.org.',
       tone: 'default',
     },
     {
       id: 'kpi-leader',
-      label: 'Who dominates?',
+      label: isPartial ? 'Leader (loaded set)' : 'Who dominates?',
       value: leader ? leader.activeInstallsDisplay : '—',
-      subValue: leader ? leader.name : 'No clear leader',
+      subValue: leader
+        ? isPartial
+          ? `${leader.name} (top of ${metrics.totalLoaded} loaded)`
+          : leader.name
+        : 'No clear leader',
       helper: leader
-        ? `${leader.name} is the install leader. Est. ${leader.installsPerDayDisplay} new installs/day (active installs ÷ days listed).`
+        ? isPartial
+          ? `${leader.name} leads the ${metrics.totalLoaded} currently loaded plugins. Load all ${metrics.totalPages} pages to confirm global tag ranking.`
+          : `${leader.name} is the overall install leader across all ${metrics.totalResults} plugins. Est. ${leader.installsPerDayDisplay} new installs/day (active installs ÷ days listed).`
         : 'No plugin with measurable traction found in this set.',
       tone: 'accent',
     },
@@ -68,14 +75,18 @@ function buildCards(metrics: KpiSummaryMetrics): KpiCardSpec[] {
       id: 'kpi-concentration',
       label: 'Market share',
       value: shareDisplay ?? '—',
-      subValue:
-        metrics.dominantPluginInstallShare !== null && metrics.dominantPluginInstallShare >= 50
+      subValue: isPartial
+        ? metrics.dominantPluginInstallShare !== null
+          ? `${metrics.dominantPluginInstallShare}% share of loaded installs`
+          : 'Moderately shared'
+        : metrics.dominantPluginInstallShare !== null && metrics.dominantPluginInstallShare >= 50
           ? 'One plugin dominates — tough to dislodge'
           : metrics.dominantPluginInstallShare !== null && metrics.dominantPluginInstallShare < 30
             ? 'Fragmented — room to compete'
             : 'Moderately shared',
-      helper:
-        "The #1 plugin's active installs as a share of the total. A high share means you'd be entering a monopolized niche.",
+      helper: isPartial
+        ? "The top loaded plugin's active installs as a share of currently loaded installs. Load all pages for full market concentration."
+        : "The #1 plugin's active installs as a share of the total. A high share means you'd be entering a monopolized niche.",
       tone: concentrationTone,
     },
     {
@@ -206,9 +217,12 @@ export function renderKpiSummary(state: AppState): void {
 
   section.hidden = false;
 
-  const metrics = computeKpiSummary(state.plugins);
-  // Inject real totalResults from app state
-  metrics.totalResults = state.totalResults;
+  const metrics = computeKpiSummary(
+    state.plugins,
+    state.totalResults,
+    state.totalPages,
+    state.loadedPages.length
+  );
 
   const grid = section.querySelector<HTMLElement>('.kpi-grid');
   if (!grid) return;
@@ -222,9 +236,12 @@ export function renderKpiSummary(state: AppState): void {
     const tag = state.activeTag;
     const loaded = state.plugins.length;
     const total = state.totalResults;
+    const loadedPagesCount = state.loadedPages.length;
+    const totalPages = state.totalPages;
+
     context.textContent =
-      loaded < total
-        ? `Based on ${loaded} of ${total} plugins tagged "${tag}" — page 1 only. Switch tags or load more for a fuller picture.`
-        : `Based on all ${loaded} plugins tagged "${tag}".`;
+      !metrics.isFullyLoaded
+        ? `Based on ${loaded} of ${total} plugins tagged "${tag}" (${loadedPagesCount} of ${totalPages} pages loaded). Load all pages for complete competitive landscape.`
+        : `Based on all ${total} plugins tagged "${tag}" across ${totalPages} ${totalPages === 1 ? 'page' : 'pages'}.`;
   }
 }

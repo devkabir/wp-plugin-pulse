@@ -106,13 +106,20 @@ export function renderPluginTable(state: AppState, onClearFilter?: () => void): 
   if (meta) {
     const sortLabel = SORT_LABELS[state.sortKey] || state.sortKey;
     const sortDir = state.sortDirection === 'asc' ? 'ascending' : 'descending';
+    const isPartial = state.plugins.length < state.totalResults || state.loadedPages.length < state.totalPages;
+    const totalPagesStr = `${state.totalPages} ${state.totalPages === 1 ? 'page' : 'pages'}`;
+    const loadedPagesCount = state.loadedPages.length || 1;
 
     if (state.query.trim()) {
-      meta.textContent = `Showing ${visiblePlugins.length} of ${state.plugins.length} loaded plugins matching “${state.query}” (sorted by ${sortLabel}, ${sortDir})`;
-    } else if (state.plugins.length < state.totalResults) {
-      meta.textContent = `Showing ${state.plugins.length} of ${state.totalResults} plugins tagged "${state.activeTag}" (sorted by ${sortLabel}, ${sortDir})`;
+      if (isPartial) {
+        meta.textContent = `Showing ${visiblePlugins.length} of ${state.plugins.length} loaded plugins (${state.totalResults} total across ${totalPagesStr}, ${loadedPagesCount} loaded) matching “${state.query}” (sorted by ${sortLabel}, ${sortDir} among loaded plugins)`;
+      } else {
+        meta.textContent = `Showing ${visiblePlugins.length} of ${state.totalResults} plugins across ${totalPagesStr} matching “${state.query}” (sorted by ${sortLabel}, ${sortDir})`;
+      }
+    } else if (isPartial) {
+      meta.textContent = `Showing ${state.plugins.length} of ${state.totalResults} plugins tagged "${state.activeTag}" (${loadedPagesCount} of ${totalPagesStr} loaded — sorted by ${sortLabel}, ${sortDir} among loaded plugins)`;
     } else {
-      meta.textContent = `Showing ${state.plugins.length} plugins tagged "${state.activeTag}" (sorted by ${sortLabel}, ${sortDir})`;
+      meta.textContent = `Showing all ${state.totalResults} plugins tagged "${state.activeTag}" across ${totalPagesStr} (sorted by ${sortLabel}, ${sortDir})`;
     }
   }
 }

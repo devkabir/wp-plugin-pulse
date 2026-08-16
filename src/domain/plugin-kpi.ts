@@ -30,8 +30,14 @@ function compactNumber(n: number): string {
  * - Active maintenance: share updated within 6 months — signals how competitive
  *   the maintenance pace is.
  */
-export function computeKpiSummary(plugins: NormalizedPlugin[]): KpiSummaryMetrics {
+export function computeKpiSummary(
+  plugins: NormalizedPlugin[],
+  totalResults = 0,
+  totalPages = 1,
+  loadedPagesCount = 1
+): KpiSummaryMetrics {
   const totalLoaded = plugins.length;
+  const isFullyLoaded = totalResults > 0 && (totalLoaded >= totalResults || loadedPagesCount >= totalPages);
 
   // ── Market size ───────────────────────────────────────────────────────────
   const totalReportedInstalls = plugins.reduce((sum, p) => sum + p.activeInstalls, 0);
@@ -123,7 +129,10 @@ export function computeKpiSummary(plugins: NormalizedPlugin[]): KpiSummaryMetric
 
   return {
     totalLoaded,
-    totalResults: 0, // caller injects appState.totalResults
+    totalResults,
+    totalPages,
+    loadedPagesCount,
+    isFullyLoaded,
     totalReportedInstalls,
     totalReportedInstallsDisplay: compactNumber(totalReportedInstalls),
     totalLifetimeDownloads,

@@ -89,6 +89,9 @@ describe('plugin filtering', () => {
     page: 1,
     totalPages: 1,
     totalResults: 3,
+    loadedPages: [1],
+    loadingMorePage: null,
+    loadMoreError: null,
   };
 
   test('returns all plugins when query is empty', () => {

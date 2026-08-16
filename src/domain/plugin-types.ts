@@ -119,11 +119,17 @@ export interface AppState {
   page: number;
   totalPages: number;
   totalResults: number;
+  loadedPages: number[];
+  loadingMorePage: number | null;
+  loadMoreError: { page: number; message: string } | null;
 }
 
 export interface KpiSummaryMetrics {
   totalLoaded: number;
   totalResults: number;
+  totalPages: number;
+  loadedPagesCount: number;
+  isFullyLoaded: boolean;
   totalReportedInstalls: number;
   totalReportedInstallsDisplay: string;
   totalLifetimeDownloads: number;
