@@ -67,6 +67,7 @@ export interface NormalizedPlugin {
   downloadUrl: string | null;
   iconUrl: string | null;
   shortDescription: string;
+  description?: string | null;
   tags: string[];
 
   // Adoption metrics
@@ -105,6 +106,126 @@ export interface NormalizedPlugin {
   testedWordPress: string | null;
   requiresPhp: string | null;
   requiredPlugins: string[];
+}
+
+export type FeatureSourceField = 'tag' | 'short_description' | 'description';
+export type FeatureStatus = 'present' | 'absent' | 'unknown';
+
+export interface FeatureEvidence {
+  field: FeatureSourceField;
+  matchedText: string;
+  snippet?: string;
+}
+
+export interface ExtractedFeature {
+  featureId: string;
+  featureName: string;
+  status: FeatureStatus;
+  evidence: FeatureEvidence[];
+}
+
+export interface FeatureDefinition {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  tagSlugs: string[];
+  patterns: RegExp[];
+}
+
+export interface NormalizedTag {
+  slug: string;
+  label: string;
+}
+
+export interface TagFrequencyItem {
+  slug: string;
+  label: string;
+  count: number;
+  pluginSlugs: string[];
+}
+
+export interface TagComparison {
+  shared: string[];
+  subjectOnly: string[];
+  competitorOnly: Array<{ tag: string; usedBy: string[] }>;
+}
+
+export type ComparisonStatus =
+  | 'match'
+  | 'advantage'
+  | 'disadvantage'
+  | 'neutral'
+  | 'insufficient_data'
+  | 'unknown';
+
+export interface ComparisonValue {
+  slug: string;
+  raw: string | number | boolean | null | string[];
+  display: string;
+  sampleCount?: number;
+  status?: ComparisonStatus;
+  note?: string;
+}
+
+export interface ComparisonRow {
+  key: string;
+  label: string;
+  subject: ComparisonValue;
+  competitors: ComparisonValue[];
+  insight?: string;
+}
+
+export interface FeatureComparison {
+  featureId: string;
+  featureName: string;
+  category?: string;
+  description: string;
+  subjectStatus: FeatureStatus;
+  subjectEvidence: FeatureEvidence[];
+  competitors: Array<{
+    slug: string;
+    status: FeatureStatus;
+    evidence: FeatureEvidence[];
+  }>;
+}
+
+export type OpportunityCategory =
+  | 'tag'
+  | 'feature'
+  | 'compatibility'
+  | 'maintenance'
+  | 'support'
+  | 'rating'
+  | 'trust';
+
+export type OpportunityImpact = 'high' | 'medium' | 'low';
+export type OpportunityConfidence = 'high' | 'medium' | 'low';
+
+export interface ComparisonOpportunity {
+  id: string;
+  category: OpportunityCategory;
+  title: string;
+  reason: string;
+  impact: OpportunityImpact;
+  confidence: OpportunityConfidence;
+  evidenceSlugs: string[];
+  evidence?: Array<{ slug: string; field?: FeatureSourceField; detail?: string }>;
+}
+
+export interface PluginComparison {
+  subject: NormalizedPlugin;
+  competitors: NormalizedPlugin[];
+  tags: {
+    shared: string[];
+    subjectOnly: string[];
+    competitorOnly: Array<{ tag: string; usedBy: string[] }>;
+  };
+  features: FeatureComparison[];
+  compatibility: ComparisonRow[];
+  maintenance: ComparisonRow[];
+  trust: ComparisonRow[];
+  opportunities: ComparisonOpportunity[];
 }
 
 export interface NormalizedPluginCollection {

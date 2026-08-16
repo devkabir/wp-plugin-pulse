@@ -92,6 +92,7 @@ function normalizePlugin(raw: RawPluginRecord, now: number): NormalizedPlugin {
     downloadUrl: url(raw.download_link, ['downloads.wordpress.org']),
     iconUrl: url(icons.svg) ?? url(icons['2x']) ?? url(icons['1x']) ?? url(icons.default),
     shortDescription: text(raw.short_description),
+    description: text(raw.description) || null,
     tags: normalizeTags(raw.tags),
     activeInstalls,
     activeInstallsDisplay: activeInstalls.toLocaleString(),
