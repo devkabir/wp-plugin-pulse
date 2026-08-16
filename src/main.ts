@@ -1,5 +1,5 @@
 import './style.css';
-import { createIcons, Activity, Search, Sun, Moon, Filter, X, Table, LayoutGrid } from 'lucide';
+import { createIcons, Activity, Search, Sun, Moon, Filter, X, Table, LayoutGrid, FileText } from 'lucide';
 import { fetchPluginBySlug, fetchPluginCollection } from './api/plugins';
 import { renderPluginTable } from './components/plugin-table';
 import { renderCardView } from './components/card-view';
@@ -10,6 +10,7 @@ import {
   closeComparisonSection,
   renderComparisonSection,
 } from './components/comparison-section';
+import { renderReadmeWorkspace } from './components/readme-workspace';
 import {
   appState,
   appendLoadedPage,
@@ -36,10 +37,11 @@ import { initTheme } from './utils/theme';
 let activeRequest: AbortController | null = null;
 let isLoadingAllRemaining = false;
 let isComparisonOpen = false;
+let isReadmeWorkspaceOpen = false;
 
 function refreshIcons(): void {
   createIcons({
-    icons: { Activity, Search, Sun, Moon, Filter, X, Table, LayoutGrid },
+    icons: { Activity, Search, Sun, Moon, Filter, X, Table, LayoutGrid, FileText },
     attrs: { 'stroke-width': 1.75 },
   });
 }
@@ -139,6 +141,21 @@ function renderApp(): void {
   } else {
     if (comparisonSection) {
       comparisonSection.hidden = true;
+    }
+  }
+
+  const readmeSection = document.getElementById('readme-workspace-section');
+  if (isReadmeWorkspaceOpen) {
+    if (readmeSection) {
+      readmeSection.hidden = false;
+      renderReadmeWorkspace(readmeSection, {
+        state: appState,
+        onClose: () => handleCloseReadmeWorkspace(),
+      });
+    }
+  } else {
+    if (readmeSection) {
+      readmeSection.hidden = true;
     }
   }
 
@@ -533,10 +550,32 @@ function initControls(): void {
     handleCloseComparison();
   });
 
-  // Global Escape key listener to close comparison workspace if open
+  // Readme Workspace Toggle & Events
+  const readmeToggleBtn = document.getElementById('readme-workspace-toggle');
+  readmeToggleBtn?.addEventListener('click', () => {
+    if (isReadmeWorkspaceOpen) {
+      handleCloseReadmeWorkspace();
+    } else {
+      handleOpenReadmeWorkspace();
+    }
+  });
+
+  document.addEventListener('open-readme-workspace', () => {
+    handleOpenReadmeWorkspace();
+  });
+
+  document.addEventListener('close-readme-workspace', () => {
+    handleCloseReadmeWorkspace();
+  });
+
+  // Global Escape key listener to close comparison or readme workspace if open
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && isComparisonOpen) {
-      handleCloseComparison();
+    if (event.key === 'Escape') {
+      if (isReadmeWorkspaceOpen) {
+        handleCloseReadmeWorkspace();
+      } else if (isComparisonOpen) {
+        handleCloseComparison();
+      }
     }
   });
 
@@ -552,6 +591,29 @@ function initControls(): void {
   document.addEventListener('load-all-plugin-pages', () => {
     void loadAllRemainingPages();
   });
+}
+
+function handleOpenReadmeWorkspace(): void {
+  isReadmeWorkspaceOpen = true;
+  renderApp();
+
+  const section = document.getElementById('readme-workspace-section');
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const heading = document.getElementById('readme-workspace-heading');
+  heading?.focus({ preventScroll: true });
+  announceComparisonStatus('Readme Optimization Workspace opened.');
+}
+
+function handleCloseReadmeWorkspace(): void {
+  isReadmeWorkspaceOpen = false;
+  renderApp();
+
+  const toggleBtn = document.getElementById('readme-workspace-toggle');
+  toggleBtn?.focus();
+  announceComparisonStatus('Readme Optimization Workspace closed.');
 }
 
 function handleCloseComparison(): void {

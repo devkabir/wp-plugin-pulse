@@ -27,7 +27,7 @@ export function announceComparisonStatus(message: string): void {
     if (liveEl) {
       liveEl.textContent = message;
     }
-  }, 50);
+  }, 10);
 }
 
 function findPluginName(slug: string, state: AppState): string {
