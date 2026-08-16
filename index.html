@@ -4,28 +4,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Compare WordPress.org plugin activity, ratings, and support metrics.">
-    <title>WP Plugin Pulse</title>
+    <meta name="description" content="Compare WordPress.org plugin activity, ratings, and support metrics at a glance.">
+    <title>WP Plugin Pulse — Compare WordPress.org Plugins</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-    <header>
-        <h1>WP Plugin Pulse</h1>
-        <p>Compare activity, ratings, and support signals for WordPress.org plugins.</p>
-    </header>
+    <div class="app-shell">
 
-    <table>
-        <thead>
-            <tr>
-                <th>Plugin Name</th>
-                <th>Installs / Day (Avg)</th>
-                <th>Rating (Stars)</th>
-                <th>Support Threads</th>
-            </tr>
-        </thead>
-        <tbody id="plugins-body"></tbody>
-    </table>
+        <header class="site-header">
+            <div class="header-inner">
+                <div class="brand">
+                    <i data-lucide="activity" class="brand-icon" aria-hidden="true"></i>
+                    <div>
+                        <h1 class="site-title">WP Plugin Pulse</h1>
+                        <p class="site-tagline">Compare activity, ratings &amp; support signals for WordPress.org plugins</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="controls-bar" aria-label="Filter plugins">
+                <div class="tag-chips" id="tag-chips" role="group" aria-label="Quick tag filters">
+                    <button class="chip chip--active" data-tag="form-builder" type="button">Form Builder</button>
+                    <button class="chip" data-tag="seo" type="button">SEO</button>
+                    <button class="chip" data-tag="woocommerce" type="button">WooCommerce</button>
+                    <button class="chip" data-tag="security" type="button">Security</button>
+                    <button class="chip" data-tag="performance" type="button">Performance</button>
+                    <button class="chip" data-tag="backup" type="button">Backup</button>
+                </div>
+                <div class="search-wrap">
+                    <label for="tag-input" class="sr-only">Custom tag</label>
+                    <input
+                        type="text"
+                        id="tag-input"
+                        class="tag-input"
+                        placeholder="Search by tag…"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <button id="tag-submit" class="tag-submit-btn" type="button" aria-label="Load plugins for tag">
+                        <i data-lucide="search" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </section>
+
+            <div class="results-meta" id="results-meta" aria-live="polite"></div>
+
+            <div class="table-wrapper" role="region" aria-label="Plugin comparison table" tabindex="0">
+                <table id="plugins-table" aria-label="WordPress.org plugins">
+                    <thead>
+                        <tr>
+                            <th scope="col">Plugin</th>
+                            <th scope="col" class="col-numeric">Installs / Day</th>
+                            <th scope="col" class="col-numeric">Active Installs</th>
+                            <th scope="col" class="col-numeric">Rating</th>
+                            <th scope="col" class="col-numeric">Support Threads</th>
+                        </tr>
+                    </thead>
+                    <tbody id="plugins-body"></tbody>
+                </table>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <p>Data from the <a href="https://api.wordpress.org/plugins/info/1.2/" target="_blank" rel="noopener noreferrer">WordPress.org Plugin API</a>. Installs/day is an estimate.</p>
+        </footer>
+
+    </div>
 
     <script type="module" src="/src/main.ts"></script>
 
