@@ -1,7 +1,8 @@
 import './style.css';
-import { createIcons, Activity, Search, Sun, Moon, Filter, X } from 'lucide';
+import { createIcons, Activity, Search, Sun, Moon, Filter, X, Table, LayoutGrid } from 'lucide';
 import { fetchPlugins } from './api/plugins';
 import { renderPluginTable } from './components/plugin-table';
+import { renderCardView } from './components/card-view';
 import { renderKpiSummary } from './components/kpi-summary';
 import { getNextUnloadedPage, renderPaginationControls } from './components/pagination-controls';
 import {
@@ -13,21 +14,70 @@ import {
   failLoading,
   failLoadingPage,
   finishLoading,
+  setActiveView,
   setQuery,
+  setSorting,
   toggleSort,
 } from './state/app-state';
-import type { SortKey } from './domain/plugin-types';
+import type { ActiveView, SortDirection, SortKey } from './domain/plugin-types';
 import { initTheme } from './utils/theme';
 
 let activeRequest: AbortController | null = null;
 let isLoadingAllRemaining = false;
 
 function refreshIcons(): void {
-  createIcons({ icons: { Activity, Search, Sun, Moon, Filter, X }, attrs: { 'stroke-width': 1.75 } });
+  createIcons({
+    icons: { Activity, Search, Sun, Moon, Filter, X, Table, LayoutGrid },
+    attrs: { 'stroke-width': 1.75 },
+  });
+}
+
+function updateViewControls(activeView: ActiveView): void {
+  const tableBtn = document.getElementById('view-toggle-table') as HTMLButtonElement | null;
+  const cardsBtn = document.getElementById('view-toggle-cards') as HTMLButtonElement | null;
+
+  if (tableBtn) {
+    const isTable = activeView === 'table';
+    tableBtn.classList.toggle('view-btn--active', isTable);
+    tableBtn.setAttribute('aria-pressed', isTable ? 'true' : 'false');
+  }
+
+  if (cardsBtn) {
+    const isCards = activeView === 'cards';
+    cardsBtn.classList.toggle('view-btn--active', isCards);
+    cardsBtn.setAttribute('aria-pressed', isCards ? 'true' : 'false');
+  }
+}
+
+function updateSortSelect(key: SortKey, direction: SortDirection): void {
+  const sortSelect = document.getElementById('sort-select') as HTMLSelectElement | null;
+  if (sortSelect) {
+    sortSelect.value = `${key}-${direction}`;
+  }
 }
 
 function renderApp(): void {
-  renderPluginTable(appState);
+  const tableWrapper = document.getElementById('table-view-wrapper');
+  const cardsWrapper = document.getElementById('cards-view-wrapper');
+  const tableBody = document.getElementById('plugins-body');
+  const cardsContainer = document.getElementById('plugins-cards');
+
+  updateViewControls(appState.activeView);
+  updateSortSelect(appState.sortKey, appState.sortDirection);
+
+  // Maintain exactly ONE active interactive view in the accessibility tree
+  if (appState.activeView === 'table') {
+    if (tableWrapper) tableWrapper.hidden = false;
+    if (cardsWrapper) cardsWrapper.hidden = true;
+    cardsContainer?.replaceChildren();
+    renderPluginTable(appState);
+  } else {
+    if (cardsWrapper) cardsWrapper.hidden = false;
+    if (tableWrapper) tableWrapper.hidden = true;
+    tableBody?.replaceChildren();
+    renderCardView(appState);
+  }
+
   renderKpiSummary(appState);
   renderPaginationControls(appState, {
     onLoadPage: (page) => void loadPluginPage(page, true),
@@ -170,7 +220,7 @@ function initControls(): void {
       if (filterClear) {
         filterClear.hidden = query.length === 0;
       }
-      renderPluginTable(appState);
+      renderApp();
     });
   }
 
@@ -184,11 +234,39 @@ function initControls(): void {
     if (filterClear) {
       filterClear.hidden = true;
     }
-    renderPluginTable(appState);
+    renderApp();
   };
 
   filterClear?.addEventListener('click', handleClearFilter);
   document.addEventListener('clear-plugin-filter', handleClearFilter);
+
+  // View Mode Segmented Control
+  const tableBtn = document.getElementById('view-toggle-table');
+  const cardsBtn = document.getElementById('view-toggle-cards');
+
+  tableBtn?.addEventListener('click', () => {
+    if (appState.activeView === 'table') return;
+    setActiveView('table');
+    renderApp();
+  });
+
+  cardsBtn?.addEventListener('click', () => {
+    if (appState.activeView === 'cards') return;
+    setActiveView('cards');
+    renderApp();
+  });
+
+  // Sort Dropdown Selector
+  const sortSelect = document.getElementById('sort-select') as HTMLSelectElement | null;
+  sortSelect?.addEventListener('change', () => {
+    const val = sortSelect.value;
+    const lastDash = val.lastIndexOf('-');
+    if (lastDash === -1) return;
+    const key = val.substring(0, lastDash) as SortKey;
+    const dir = val.substring(lastDash + 1) as SortDirection;
+    setSorting(key, dir);
+    renderApp();
+  });
 
   // Table Column Sort Headers
   pluginsTable?.querySelector('thead')?.addEventListener('click', (event) => {
@@ -202,7 +280,7 @@ function initControls(): void {
     if (!sortKey) return;
 
     toggleSort(sortKey);
-    renderPluginTable(appState);
+    renderApp();
   });
 
   // Actionable Tag Chips in Plugin Rows

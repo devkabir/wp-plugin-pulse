@@ -89,27 +89,74 @@
                 <div class="kpi-grid" role="list" aria-label="Key performance indicators"></div>
             </section>
 
-            <section class="filter-toolbar" aria-label="Filter loaded plugins">
-                <div class="filter-wrap">
-                    <label for="filter-input" class="sr-only">Filter loaded plugins</label>
-                    <i data-lucide="filter" class="filter-icon" aria-hidden="true"></i>
-                    <input
-                        type="text"
-                        id="filter-input"
-                        class="filter-input"
-                        placeholder="Filter loaded plugins by name, author, tag, or description…"
-                        autocomplete="off"
-                        spellcheck="false"
-                    >
-                    <button id="filter-clear" class="filter-clear-btn" type="button" aria-label="Clear filter" hidden>
-                        <i data-lucide="x" aria-hidden="true"></i>
-                    </button>
+            <section class="filter-toolbar" aria-label="Filter and display options">
+                <div class="filter-toolbar-inner">
+                    <div class="filter-wrap">
+                        <label for="filter-input" class="sr-only">Filter loaded plugins</label>
+                        <i data-lucide="filter" class="filter-icon" aria-hidden="true"></i>
+                        <input
+                            type="text"
+                            id="filter-input"
+                            class="filter-input"
+                            placeholder="Filter loaded plugins by name, author, tag, or description…"
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                        <button id="filter-clear" class="filter-clear-btn" type="button" aria-label="Clear filter" hidden>
+                            <i data-lucide="x" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="toolbar-actions">
+                        <div class="sort-select-wrap">
+                            <label for="sort-select" class="sr-only">Sort plugins</label>
+                            <select id="sort-select" class="sort-select" aria-label="Sort plugins by attribute and direction">
+                                <option value="activeInstalls-desc">Active Installs (High to Low)</option>
+                                <option value="activeInstalls-asc">Active Installs (Low to High)</option>
+                                <option value="estimatedInstallsPerDay-desc">Estimated Installs / Day (High to Low)</option>
+                                <option value="estimatedInstallsPerDay-asc">Estimated Installs / Day (Low to High)</option>
+                                <option value="name-asc">Name (A to Z)</option>
+                                <option value="name-desc">Name (Z to A)</option>
+                                <option value="ratingScore-desc">Rating (High to Low)</option>
+                                <option value="ratingScore-asc">Rating (Low to High)</option>
+                                <option value="supportResolution-desc">Support Resolution (High to Low)</option>
+                                <option value="supportResolution-asc">Support Resolution (Low to High)</option>
+                                <option value="lastUpdated-desc">Last Updated (Newest first)</option>
+                                <option value="lastUpdated-asc">Last Updated (Oldest first)</option>
+                            </select>
+                        </div>
+                        <div class="view-toggle" role="group" aria-label="View mode">
+                            <button
+                                id="view-toggle-table"
+                                class="view-btn view-btn--active"
+                                type="button"
+                                data-view="table"
+                                aria-pressed="true"
+                                aria-label="Table view"
+                                title="Dense table comparison view"
+                            >
+                                <i data-lucide="table" aria-hidden="true"></i>
+                                <span class="view-btn-label">Table</span>
+                            </button>
+                            <button
+                                id="view-toggle-cards"
+                                class="view-btn"
+                                type="button"
+                                data-view="cards"
+                                aria-pressed="false"
+                                aria-label="Card grid view"
+                                title="Card grid scan view"
+                            >
+                                <i data-lucide="layout-grid" aria-hidden="true"></i>
+                                <span class="view-btn-label">Cards</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <div class="results-meta" id="results-meta" aria-live="polite"></div>
 
-            <div class="table-wrapper" role="region" aria-label="Plugin comparison table" tabindex="0">
+            <div id="table-view-wrapper" class="table-wrapper" role="region" aria-label="Plugin comparison table" tabindex="0">
                 <table id="plugins-table" aria-label="WordPress.org plugins">
                     <thead>
                         <tr>
@@ -153,6 +200,10 @@
                     </thead>
                     <tbody id="plugins-body"></tbody>
                 </table>
+            </div>
+
+            <div id="cards-view-wrapper" class="cards-wrapper" role="region" aria-label="Plugin cards grid" hidden>
+                <div id="plugins-cards" class="cards-grid" role="list" aria-label="WordPress.org plugin cards"></div>
             </div>
 
             <section id="pagination-controls" class="pagination-controls" aria-label="Pagination and additional results" hidden></section>

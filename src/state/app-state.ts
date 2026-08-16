@@ -1,4 +1,5 @@
-import type { AppState, NormalizedPlugin, NormalizedPluginCollection, SortDirection, SortKey } from '../domain/plugin-types';
+import type { ActiveView, AppState, NormalizedPlugin, NormalizedPluginCollection, SortDirection, SortKey } from '../domain/plugin-types';
+import { getStoredView, setStoredView } from '../utils/view-preference';
 
 export const appState: AppState = {
   plugins: [],
@@ -6,7 +7,7 @@ export const appState: AppState = {
   query: '',
   sortKey: 'activeInstalls',
   sortDirection: 'desc',
-  activeView: 'table',
+  activeView: getStoredView(),
   status: 'idle',
   error: null,
   page: 1,
@@ -130,4 +131,9 @@ export function toggleSort(key: SortKey): void {
 export function setSorting(key: SortKey, direction: SortDirection): void {
   appState.sortKey = key;
   appState.sortDirection = direction;
+}
+
+export function setActiveView(view: ActiveView): void {
+  appState.activeView = view;
+  setStoredView(view);
 }
