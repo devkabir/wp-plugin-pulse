@@ -20,9 +20,35 @@ function text(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? decodeHtmlEntities(value).trim() : fallback;
 }
 
+/**
+ * WordPress.org returns last_updated as a non-ISO string like "2026-08-12 9:48am GMT".
+ * Date.parse() returns NaN for this format in all environments, so we normalise it first.
+ */
+function parseWordPressDate(value: string): number {
+  // Fast path: already ISO-parseable (e.g. "2016-03-14")
+  const direct = Date.parse(value);
+  if (Number.isFinite(direct)) return direct;
+
+  // Slow path: "YYYY-MM-DD h:mmam GMT" or "YYYY-MM-DD h:mmpm GMT"
+  const match = value.match(
+    /^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{2})(am|pm)\s+GMT$/i,
+  );
+  if (!match) return NaN;
+  let hours = parseInt(match[2], 10);
+  const minutes = parseInt(match[3], 10);
+  const isPm = match[4].toLowerCase() === 'pm';
+  if (isPm && hours !== 12) hours += 12;
+  if (!isPm && hours === 12) hours = 0;
+  const iso = `${match[1]}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`;
+  return Date.parse(iso);
+}
+
 function date(value: unknown): string | null {
-  if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) return null;
-  return value;
+  if (typeof value !== 'string') return null;
+  const ms = parseWordPressDate(value);
+  if (!Number.isFinite(ms)) return null;
+  // Normalise to ISO so downstream consumers always get a consistent format
+  return new Date(ms).toISOString();
 }
 
 function url(value: unknown, allowedHosts?: string[]): string | null {

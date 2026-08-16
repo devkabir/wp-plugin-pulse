@@ -2,7 +2,7 @@ function createStatusRow(message: string, cellClass: string): HTMLTableRowElemen
   const row = document.createElement('tr');
   const cell = document.createElement('td');
 
-  cell.colSpan = 5;
+  cell.colSpan = 6;
   cell.className = 'table-status';
   cell.setAttribute('role', 'status');
   cell.setAttribute('aria-live', 'polite');
