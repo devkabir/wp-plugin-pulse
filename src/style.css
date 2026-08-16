@@ -14,3 +14,36 @@ td {
 th {
   background: #f2f2f2;
 }
+
+.table-status {
+  padding: 24px;
+  text-align: center;
+}
+
+.table-status--loading {
+  color: #555;
+}
+
+.loader {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 2px solid #ccc;
+  border-top-color: #333;
+  border-radius: 50%;
+  vertical-align: -2px;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader {
+    animation: none;
+  }
+}
