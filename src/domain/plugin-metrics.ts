@@ -2,19 +2,31 @@ import type { FreshnessCategory } from './plugin-types';
 
 const MILLISECONDS_PER_DAY = 86_400_000;
 
-export function estimatedInstallsPerDay(activeInstalls: number, addedAt: string | null, now = Date.now()): {
+/**
+ * Calculates the lifetime install pace (reported active installs divided by days since the plugin was added).
+ *
+ * NOTE: This is a historical average over the entire lifetime of the plugin on WordPress.org,
+ * NOT a measure of recent growth or current daily downloads.
+ *
+ * Missing or invalid added dates produce an unavailable state ({ daysSinceAdded: 0, pace: 0 }).
+ */
+export function lifetimeInstallPace(
+  activeInstalls: number,
+  addedAt: string | null,
+  now = Date.now()
+): {
   daysSinceAdded: number;
-  estimate: number;
+  pace: number;
 } {
-  if (!addedAt) return { daysSinceAdded: 0, estimate: 0 };
+  if (!addedAt) return { daysSinceAdded: 0, pace: 0 };
 
   const addedTime = Date.parse(addedAt);
-  if (!Number.isFinite(addedTime)) return { daysSinceAdded: 0, estimate: 0 };
+  if (!Number.isFinite(addedTime)) return { daysSinceAdded: 0, pace: 0 };
 
   const daysSinceAdded = Math.max(1, Math.floor((now - addedTime) / MILLISECONDS_PER_DAY));
   return {
     daysSinceAdded,
-    estimate: activeInstalls / daysSinceAdded,
+    pace: activeInstalls / daysSinceAdded,
   };
 }
 

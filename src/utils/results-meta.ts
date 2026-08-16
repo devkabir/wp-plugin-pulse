@@ -2,7 +2,7 @@ import type { AppState, SortKey } from '../domain/plugin-types';
 
 export const SORT_LABELS: Record<SortKey, string> = {
   name: 'Plugin Name',
-  estimatedInstallsPerDay: 'Estimated Installs / Day',
+  lifetimeInstallPace: 'Lifetime Install Pace',
   activeInstalls: 'Active Installs',
   ratingScore: 'Rating',
   supportResolution: 'Support Resolution',

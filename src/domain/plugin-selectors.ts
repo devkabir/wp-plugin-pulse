@@ -48,9 +48,9 @@ export function sortPlugins(
         diff = left.name.localeCompare(right.name, undefined, { sensitivity: 'base', numeric: true });
         break;
 
-      case 'estimatedInstallsPerDay': {
-        const leftHas = left.estimatedInstallsPerDay > 0;
-        const rightHas = right.estimatedInstallsPerDay > 0;
+      case 'lifetimeInstallPace': {
+        const leftHas = left.lifetimeInstallPace > 0;
+        const rightHas = right.lifetimeInstallPace > 0;
         if (!leftHas && !rightHas) {
           diff = 0;
         } else if (!leftHas) {
@@ -58,7 +58,7 @@ export function sortPlugins(
         } else if (!rightHas) {
           return -1; // Unavailable always at bottom
         } else {
-          diff = left.estimatedInstallsPerDay - right.estimatedInstallsPerDay;
+          diff = left.lifetimeInstallPace - right.lifetimeInstallPace;
         }
         break;
       }

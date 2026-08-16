@@ -19,8 +19,8 @@ function createMockPlugin(overrides: Partial<NormalizedPlugin> = {}): Normalized
     activeInstallsDisplay: '50,000+',
     lifetimeDownloads: 200000,
     lifetimeDownloadsDisplay: '200,000',
-    estimatedInstallsPerDay: 120,
-    estimatedInstallsPerDayDisplay: '120',
+    lifetimeInstallPace: 120,
+    lifetimeInstallPaceDisplay: '120',
     daysSinceAdded: 416,
     ratingPercent: 96,
     ratingScore: 4.8,
@@ -143,7 +143,7 @@ describe('plugin sorting', () => {
     name: 'Alpha Form',
     slug: 'alpha-form',
     activeInstalls: 10000,
-    estimatedInstallsPerDay: 50,
+    lifetimeInstallPace: 50,
     ratingScore: 4.5,
     ratingCount: 20,
     supportResolutionRate: 90,
@@ -155,7 +155,7 @@ describe('plugin sorting', () => {
     name: 'Beta Form',
     slug: 'beta-form',
     activeInstalls: 500000,
-    estimatedInstallsPerDay: 400,
+    lifetimeInstallPace: 400,
     ratingScore: 4.9,
     ratingCount: 200,
     supportResolutionRate: 70,
@@ -167,7 +167,7 @@ describe('plugin sorting', () => {
     name: 'Gamma Form',
     slug: 'gamma-form',
     activeInstalls: 500000, // Equal active installs to pB
-    estimatedInstallsPerDay: 0, // Unavailable
+    lifetimeInstallPace: 0, // Unavailable
     ratingScore: 0, // Unrated
     ratingCount: 0,
     supportResolutionRate: null, // No support threads
@@ -190,11 +190,11 @@ describe('plugin sorting', () => {
     expect(desc.map((p) => p.name)).toEqual(['Beta Form', 'Gamma Form', 'Alpha Form']);
   });
 
-  test('sorts by estimated installs per day placing unavailable (0) at bottom', () => {
-    const desc = sortPlugins([pC, pA, pB], 'estimatedInstallsPerDay', 'desc');
+  test('sorts by lifetime install pace placing unavailable (0) at bottom', () => {
+    const desc = sortPlugins([pC, pA, pB], 'lifetimeInstallPace', 'desc');
     expect(desc.map((p) => p.name)).toEqual(['Beta Form', 'Alpha Form', 'Gamma Form']);
 
-    const asc = sortPlugins([pC, pA, pB], 'estimatedInstallsPerDay', 'asc');
+    const asc = sortPlugins([pC, pA, pB], 'lifetimeInstallPace', 'asc');
     expect(asc.map((p) => p.name)).toEqual(['Alpha Form', 'Beta Form', 'Gamma Form']);
   });
 

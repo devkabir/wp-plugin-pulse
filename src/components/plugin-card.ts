@@ -161,19 +161,23 @@ export function createPluginCard(plugin: NormalizedPlugin): HTMLElement {
   }
   metricsGrid.append(installsMetric);
 
-  // 2. Estimated Installs / Day
-  const ipDayMetric = el('div', 'plugin-card__metric');
-  const ipDayLabel = el('span', 'plugin-card__metric-label', 'Est. Installs / Day');
-  ipDayMetric.append(ipDayLabel);
-  if (plugin.estimatedInstallsPerDay === 0) {
+  // 2. Lifetime Install Pace
+  const paceMetric = el('div', 'plugin-card__metric');
+  const paceLabel = el('span', 'plugin-card__metric-label', 'Lifetime Pace');
+  paceLabel.title = 'Reported active installs divided by days since the plugin was added. Not recent growth.';
+  paceMetric.append(paceLabel);
+  if (plugin.lifetimeInstallPace === 0) {
     const unavail = el('span', 'stat-unavailable', '—');
-    unavail.title = 'Cannot estimate: plugin added date is unavailable.';
-    ipDayMetric.append(unavail);
+    unavail.title = 'Cannot calculate pace: plugin added date is unavailable.';
+    paceMetric.append(unavail);
   } else {
-    ipDayMetric.append(el('div', 'stat-primary', `~${plugin.estimatedInstallsPerDayDisplay}`));
-    ipDayMetric.append(el('div', 'stat-secondary stat-hint', 'est. per day'));
+    const paceVal = el('div', 'stat-primary', `~${plugin.lifetimeInstallPaceDisplay}`);
+    paceVal.title = 'Reported active installs divided by days since the plugin was added. Not recent growth.';
+    const paceHint = el('div', 'stat-secondary stat-hint', 'installs/day (lifetime)');
+    paceHint.title = 'Reported active installs divided by days since the plugin was added. Not recent growth.';
+    paceMetric.append(paceVal, paceHint);
   }
-  metricsGrid.append(ipDayMetric);
+  metricsGrid.append(paceMetric);
 
   // 3. Rating
   const ratingMetric = el('div', 'plugin-card__metric plugin-card__metric--wide');

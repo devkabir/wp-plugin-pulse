@@ -1,5 +1,5 @@
 import { decodeHtmlEntities } from '../utils/decode-html-entities';
-import { estimatedInstallsPerDay, freshnessFor, relativeUpdatedLabel, supportResolutionRate } from './plugin-metrics';
+import { freshnessFor, lifetimeInstallPace, relativeUpdatedLabel, supportResolutionRate } from './plugin-metrics';
 import type { NormalizedPlugin, NormalizedPluginCollection, RawPluginApiResponse, RawPluginRecord } from './plugin-types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -77,7 +77,7 @@ function normalizePlugin(raw: RawPluginRecord, now: number): NormalizedPlugin {
   const supportThreadsResolved = nonNegativeNumber(raw.support_threads_resolved);
   const addedAt = date(raw.added);
   const lastUpdatedAt = date(raw.last_updated);
-  const estimate = estimatedInstallsPerDay(activeInstalls, addedAt, now);
+  const pace = lifetimeInstallPace(activeInstalls, addedAt, now);
   const ratings = isRecord(raw.ratings) ? raw.ratings : {};
   const icons = isRecord(raw.icons) ? raw.icons : {};
 
@@ -97,9 +97,9 @@ function normalizePlugin(raw: RawPluginRecord, now: number): NormalizedPlugin {
     activeInstallsDisplay: activeInstalls.toLocaleString(),
     lifetimeDownloads,
     lifetimeDownloadsDisplay: lifetimeDownloads.toLocaleString(),
-    estimatedInstallsPerDay: estimate.estimate,
-    estimatedInstallsPerDayDisplay: estimate.estimate.toFixed(1),
-    daysSinceAdded: estimate.daysSinceAdded,
+    lifetimeInstallPace: pace.pace,
+    lifetimeInstallPaceDisplay: pace.pace.toFixed(1),
+    daysSinceAdded: pace.daysSinceAdded,
     ratingPercent,
     ratingScore: ratingPercent / 20,
     ratingScoreDisplay: (ratingPercent / 20).toFixed(1),

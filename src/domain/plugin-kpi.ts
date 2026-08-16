@@ -20,7 +20,7 @@ function compactNumber(n: number): string {
  *
  * Competitive signals computed:
  * - Market size: total active installs across all plugins in this tag.
- * - Market leader: the plugin with the highest estimated installs/day, plus its
+ * - Market leader: the plugin with the highest lifetime install pace, plus its
  *   install share of the total — a proxy for how monopolized the niche is.
  * - Rating bar: weighted mean rating (by review count) — the quality standard
  *   a new entrant would need to match or beat.
@@ -47,19 +47,19 @@ export function computeKpiSummary(
   let leader: NormalizedPlugin | null = null;
   for (const p of plugins) {
     if (
-      p.estimatedInstallsPerDay > 0 &&
-      (leader === null || p.estimatedInstallsPerDay > leader.estimatedInstallsPerDay)
+      p.lifetimeInstallPace > 0 &&
+      (leader === null || p.lifetimeInstallPace > leader.lifetimeInstallPace)
     ) {
       leader = p;
     }
   }
 
-  const topEstimatedInstallsLeader = leader
+  const topLifetimeInstallPaceLeader = leader
     ? {
         name: leader.name,
         slug: leader.slug,
-        installsPerDay: leader.estimatedInstallsPerDay,
-        installsPerDayDisplay: leader.estimatedInstallsPerDayDisplay,
+        lifetimeInstallPace: leader.lifetimeInstallPace,
+        lifetimeInstallPaceDisplay: leader.lifetimeInstallPaceDisplay,
         activeInstalls: leader.activeInstalls,
         activeInstallsDisplay: leader.activeInstallsDisplay,
       }
@@ -137,7 +137,7 @@ export function computeKpiSummary(
     totalReportedInstallsDisplay: compactNumber(totalReportedInstalls),
     totalLifetimeDownloads,
     totalLifetimeDownloadsDisplay: compactNumber(totalLifetimeDownloads),
-    topEstimatedInstallsLeader,
+    topLifetimeInstallPaceLeader,
     dominantPluginInstallShare,
     weightedCommunityRating,
     weightedCommunityRatingDisplay,

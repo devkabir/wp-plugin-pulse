@@ -112,8 +112,8 @@
                             <select id="sort-select" class="sort-select" aria-label="Sort plugins by attribute and direction">
                                 <option value="activeInstalls-desc">Active Installs (High to Low)</option>
                                 <option value="activeInstalls-asc">Active Installs (Low to High)</option>
-                                <option value="estimatedInstallsPerDay-desc">Estimated Installs / Day (High to Low)</option>
-                                <option value="estimatedInstallsPerDay-asc">Estimated Installs / Day (Low to High)</option>
+                                <option value="lifetimeInstallPace-desc">Lifetime Install Pace (High to Low)</option>
+                                <option value="lifetimeInstallPace-asc">Lifetime Install Pace (Low to High)</option>
                                 <option value="name-asc">Name (A to Z)</option>
                                 <option value="name-desc">Name (Z to A)</option>
                                 <option value="ratingScore-desc">Rating (High to Low)</option>
@@ -166,9 +166,9 @@
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
-                            <th scope="col" class="col-numeric" data-sort-key="estimatedInstallsPerDay" aria-sort="none">
-                                <button class="th-sort-btn" type="button" aria-label="Sort by Estimated Installs / Day. Activate to sort descending.">
-                                    <span>Estimated Installs / Day</span>
+                            <th scope="col" class="col-numeric" data-sort-key="lifetimeInstallPace" aria-sort="none">
+                                <button class="th-sort-btn" type="button" aria-label="Sort by Lifetime Install Pace. Activate to sort descending." title="Reported active installs divided by days since the plugin was added. Not recent growth.">
+                                    <span>Lifetime Pace</span>
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
@@ -210,7 +210,7 @@
         </main>
 
         <footer class="site-footer">
-            <p>Current data from the <a href="https://api.wordpress.org/plugins/info/1.2/" target="_blank" rel="noopener noreferrer">WordPress.org Plugin API</a>, cached daily. Installs/day is an estimate.</p>
+            <p>Current data from the <a href="https://api.wordpress.org/plugins/info/1.2/" target="_blank" rel="noopener noreferrer">WordPress.org Plugin API</a>, cached daily. Lifetime pace is reported active installs divided by days since the plugin was added (not recent growth).</p>
         </footer>
 
     </div>

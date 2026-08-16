@@ -11,6 +11,13 @@ export interface RawPluginApiResponse {
   plugins?: RawPluginRecord[];
 }
 
+export type QueryMode = 'tag' | 'search' | 'slug';
+
+export type PluginQuery =
+  | { mode: 'tag'; value: string }
+  | { mode: 'search'; value: string }
+  | { mode: 'slug'; value: string };
+
 export type ActiveView = 'table' | 'cards';
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -67,8 +74,8 @@ export interface NormalizedPlugin {
   activeInstallsDisplay: string;
   lifetimeDownloads: number;
   lifetimeDownloadsDisplay: string;
-  estimatedInstallsPerDay: number;
-  estimatedInstallsPerDayDisplay: string;
+  lifetimeInstallPace: number;
+  lifetimeInstallPaceDisplay: string;
   daysSinceAdded: number;
 
   // Rating metrics
@@ -144,11 +151,11 @@ export interface KpiSummaryMetrics {
   totalReportedInstallsDisplay: string;
   totalLifetimeDownloads: number;
   totalLifetimeDownloadsDisplay: string;
-  topEstimatedInstallsLeader: {
+  topLifetimeInstallPaceLeader: {
     name: string;
     slug: string;
-    installsPerDay: number;
-    installsPerDayDisplay: string;
+    lifetimeInstallPace: number;
+    lifetimeInstallPaceDisplay: string;
     /** Active installs of this leader plugin */
     activeInstalls: number;
     activeInstallsDisplay: string;
@@ -167,7 +174,7 @@ export interface KpiSummaryMetrics {
 
 export type SortKey =
   | 'name'
-  | 'estimatedInstallsPerDay'
+  | 'lifetimeInstallPace'
   | 'activeInstalls'
   | 'ratingScore'
   | 'supportResolution'

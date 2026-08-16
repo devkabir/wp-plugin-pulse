@@ -16,7 +16,7 @@ interface KpiCardSpec {
 }
 
 function buildCards(metrics: KpiSummaryMetrics): KpiCardSpec[] {
-  const leader = metrics.topEstimatedInstallsLeader;
+  const leader = metrics.topLifetimeInstallPaceLeader;
   const isPartial = !metrics.isFullyLoaded;
   const shareDisplay =
     metrics.dominantPluginInstallShare !== null
@@ -67,7 +67,7 @@ function buildCards(metrics: KpiSummaryMetrics): KpiCardSpec[] {
       helper: leader
         ? isPartial
           ? `${leader.name} leads the ${metrics.totalLoaded} currently loaded plugins. Load all ${metrics.totalPages} pages to confirm global tag ranking.`
-          : `${leader.name} is the overall install leader across all ${metrics.totalResults} plugins. Est. ${leader.installsPerDayDisplay} new installs/day (active installs ÷ days listed).`
+          : `${leader.name} is the overall install leader across all ${metrics.totalResults} plugins. Lifetime pace: ~${leader.lifetimeInstallPaceDisplay} installs/day (reported active installs ÷ days listed; not recent growth).`
         : 'No plugin with measurable traction found in this set.',
       tone: 'accent',
     },

@@ -186,16 +186,19 @@ export function createPluginRow(plugin: NormalizedPlugin): HTMLTableRowElement {
   nameCell.append(identityDiv);
 
   // ==========================================
-  // Column 2: Estimated Installs / Day
+  // Column 2: Lifetime Install Pace
   // ==========================================
-  const ipDayCell = createCell('col-numeric');
-  if (plugin.estimatedInstallsPerDay === 0) {
+  const paceCell = createCell('col-numeric');
+  if (plugin.lifetimeInstallPace === 0) {
     const unavail = el('span', 'stat-unavailable', '—');
-    unavail.title = 'Cannot estimate: plugin added date is unavailable.';
-    ipDayCell.append(unavail);
+    unavail.title = 'Cannot calculate pace: plugin added date is unavailable.';
+    paceCell.append(unavail);
   } else {
-    ipDayCell.append(el('div', 'stat-primary', `~${plugin.estimatedInstallsPerDayDisplay}`));
-    ipDayCell.append(el('div', 'stat-secondary stat-hint', 'est. per day'));
+    const paceVal = el('div', 'stat-primary', `~${plugin.lifetimeInstallPaceDisplay}`);
+    paceVal.title = 'Reported active installs divided by days since the plugin was added. Not recent growth.';
+    const paceHint = el('div', 'stat-secondary stat-hint', 'installs/day (lifetime)');
+    paceHint.title = 'Reported active installs divided by days since the plugin was added. Not recent growth.';
+    paceCell.append(paceVal, paceHint);
   }
 
   // ==========================================
@@ -327,7 +330,7 @@ export function createPluginRow(plugin: NormalizedPlugin): HTMLTableRowElement {
     updatedCell.append(el('div', 'stat-secondary', d.toLocaleDateString()));
   }
 
-  row.append(nameCell, ipDayCell, installsCell, ratingCell, supportCell, updatedCell);
+  row.append(nameCell, paceCell, installsCell, ratingCell, supportCell, updatedCell);
 
   return row;
 }

@@ -1,12 +1,16 @@
 import { describe, expect, test } from 'bun:test';
-import { estimatedInstallsPerDay, freshnessFor, supportResolutionRate } from './plugin-metrics';
+import { freshnessFor, lifetimeInstallPace, supportResolutionRate } from './plugin-metrics';
 
 describe('plugin metrics', () => {
-  test('calculates a finite estimate with a minimum one-day age', () => {
-    expect(estimatedInstallsPerDay(100, '2026-08-16', Date.parse('2026-08-16')).estimate).toBe(100);
-    expect(estimatedInstallsPerDay(100, 'invalid', Date.parse('2026-08-16'))).toEqual({
+  test('calculates a finite pace with a minimum one-day age', () => {
+    expect(lifetimeInstallPace(100, '2026-08-16', Date.parse('2026-08-16')).pace).toBe(100);
+    expect(lifetimeInstallPace(100, 'invalid', Date.parse('2026-08-16'))).toEqual({
       daysSinceAdded: 0,
-      estimate: 0,
+      pace: 0,
+    });
+    expect(lifetimeInstallPace(100, null, Date.parse('2026-08-16'))).toEqual({
+      daysSinceAdded: 0,
+      pace: 0,
     });
   });
 

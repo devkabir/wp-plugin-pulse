@@ -25,7 +25,7 @@ export function createTableSkeletons(count = 6): DocumentFragment {
     identityWrap.append(icon, titleWrap);
     identityCell.append(identityWrap);
 
-    // 2. Estimated Installs / Day Column
+    // 2. Lifetime Install Pace Column
     const estCell = document.createElement('td');
     estCell.className = 'col-numeric';
     const estPill = document.createElement('div');

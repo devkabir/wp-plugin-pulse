@@ -21,8 +21,8 @@ function createMockPlugin(overrides: Partial<NormalizedPlugin>): NormalizedPlugi
     activeInstallsDisplay: '1,000',
     lifetimeDownloads: 5000,
     lifetimeDownloadsDisplay: '5,000',
-    estimatedInstallsPerDay: 10,
-    estimatedInstallsPerDayDisplay: '10.0',
+    lifetimeInstallPace: 10,
+    lifetimeInstallPaceDisplay: '10.0',
     daysSinceAdded: 100,
     ratingPercent: 90,
     ratingScore: 4.5,
@@ -89,8 +89,8 @@ describe('pagination and multi-page data merging', () => {
 describe('competitive landscape rankings and multi-page state', () => {
   test('marks landscape as partial when loaded count is less than total results', () => {
     const plugins = [
-      createMockPlugin({ slug: 'plugin-1', name: 'Leader One', estimatedInstallsPerDay: 50, activeInstalls: 50000 }),
-      createMockPlugin({ slug: 'plugin-2', name: 'Runner Up', estimatedInstallsPerDay: 20, activeInstalls: 20000 }),
+      createMockPlugin({ slug: 'plugin-1', name: 'Leader One', lifetimeInstallPace: 50, activeInstalls: 50000 }),
+      createMockPlugin({ slug: 'plugin-2', name: 'Runner Up', lifetimeInstallPace: 20, activeInstalls: 20000 }),
     ];
 
     // 2 loaded out of 255 across 3 pages
@@ -100,14 +100,14 @@ describe('competitive landscape rankings and multi-page state', () => {
     expect(metrics.totalPages).toBe(3);
     expect(metrics.loadedPagesCount).toBe(1);
     expect(metrics.isFullyLoaded).toBe(false);
-    expect(metrics.topEstimatedInstallsLeader?.slug).toBe('plugin-1');
+    expect(metrics.topLifetimeInstallPaceLeader?.slug).toBe('plugin-1');
   });
 
   test('marks landscape as fully loaded when all pages are loaded', () => {
     const plugins = [
-      createMockPlugin({ slug: 'plugin-1', name: 'Leader One', estimatedInstallsPerDay: 50, activeInstalls: 50000 }),
-      createMockPlugin({ slug: 'plugin-2', name: 'Runner Up', estimatedInstallsPerDay: 20, activeInstalls: 20000 }),
-      createMockPlugin({ slug: 'plugin-3', name: 'Third Place', estimatedInstallsPerDay: 10, activeInstalls: 10000 }),
+      createMockPlugin({ slug: 'plugin-1', name: 'Leader One', lifetimeInstallPace: 50, activeInstalls: 50000 }),
+      createMockPlugin({ slug: 'plugin-2', name: 'Runner Up', lifetimeInstallPace: 20, activeInstalls: 20000 }),
+      createMockPlugin({ slug: 'plugin-3', name: 'Third Place', lifetimeInstallPace: 10, activeInstalls: 10000 }),
     ];
 
     // 3 loaded out of 3 total across 1 page (or 3 of 3 pages)

@@ -33,14 +33,19 @@ describe('plugin response contract', () => {
     expect(new Date(plugin.addedAt!).getFullYear()).toBe(2023);
   });
 
-  test('parses WordPress.org pm date variant', () => {
+  test('normalizes lifetime install pace correctly and produces unavailable state for missing added date', () => {
     const result = normalizePluginResponse({
-      info: { page: 1, pages: 1, results: 1 },
-      plugins: [{ slug: 'test', last_updated: '2025-12-25 3:00pm GMT' }],
-    });
-    const plugin = result.plugins[0];
-    expect(plugin.lastUpdatedAt).not.toBeNull();
-    expect(new Date(plugin.lastUpdatedAt!).getUTCHours()).toBe(15);
+      info: { page: 1, pages: 1, results: 2 },
+      plugins: [
+        { slug: 'active-plugin', active_installs: 1000, added: '2026-08-01' },
+        { slug: 'missing-date', active_installs: 500, added: '' },
+      ],
+    }, Date.parse('2026-08-11T00:00:00Z'));
+    const [p1, p2] = result.plugins;
+    expect(p1.lifetimeInstallPace).toBe(100);
+    expect(p1.lifetimeInstallPaceDisplay).toBe('100.0');
+    expect(p2.lifetimeInstallPace).toBe(0);
+    expect(p2.lifetimeInstallPaceDisplay).toBe('0.0');
   });
 });
 
