@@ -56,7 +56,7 @@
         </header>
 
         <main class="main-content">
-            <section class="controls-bar" aria-label="Filter plugins">
+            <section class="controls-bar" aria-label="Tag selector">
                 <div class="tag-chips" id="tag-chips" role="group" aria-label="Quick tag filters">
                     <button class="chip chip--active" data-tag="form-builder" type="button">Form Builder</button>
                     <button class="chip" data-tag="seo" type="button">SEO</button>
@@ -81,8 +81,6 @@
                 </div>
             </section>
 
-            <div class="results-meta" id="results-meta" aria-live="polite"></div>
-
             <section id="kpi-summary" class="kpi-summary" aria-label="Competitive Landscape" hidden>
                 <div class="kpi-summary__header">
                     <h2 class="kpi-summary__title">Competitive Landscape</h2>
@@ -91,16 +89,66 @@
                 <div class="kpi-grid" role="list" aria-label="Key performance indicators"></div>
             </section>
 
+            <section class="filter-toolbar" aria-label="Filter loaded plugins">
+                <div class="filter-wrap">
+                    <label for="filter-input" class="sr-only">Filter loaded plugins</label>
+                    <i data-lucide="filter" class="filter-icon" aria-hidden="true"></i>
+                    <input
+                        type="text"
+                        id="filter-input"
+                        class="filter-input"
+                        placeholder="Filter loaded plugins by name, author, tag, or description…"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <button id="filter-clear" class="filter-clear-btn" type="button" aria-label="Clear filter" hidden>
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </section>
+
+            <div class="results-meta" id="results-meta" aria-live="polite"></div>
+
             <div class="table-wrapper" role="region" aria-label="Plugin comparison table" tabindex="0">
                 <table id="plugins-table" aria-label="WordPress.org plugins">
                     <thead>
                         <tr>
-                            <th scope="col">Plugin</th>
-                            <th scope="col" class="col-numeric">Estimated Installs / Day</th>
-                            <th scope="col" class="col-numeric">Active Installs</th>
-                            <th scope="col" class="col-numeric">Rating</th>
-                            <th scope="col" class="col-numeric">Support</th>
-                            <th scope="col" class="col-numeric">Last Updated</th>
+                            <th scope="col" data-sort-key="name" aria-sort="none">
+                                <button class="th-sort-btn" type="button" aria-label="Sort by Plugin Name. Activate to sort ascending.">
+                                    <span>Plugin</span>
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-numeric" data-sort-key="estimatedInstallsPerDay" aria-sort="none">
+                                <button class="th-sort-btn" type="button" aria-label="Sort by Estimated Installs / Day. Activate to sort descending.">
+                                    <span>Estimated Installs / Day</span>
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-numeric" data-sort-key="activeInstalls" aria-sort="descending">
+                                <button class="th-sort-btn th-sort-btn--active" data-direction="desc" type="button" aria-label="Sort by Active Installs, currently descending. Activate to sort ascending.">
+                                    <span>Active Installs</span>
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-numeric" data-sort-key="ratingScore" aria-sort="none">
+                                <button class="th-sort-btn" type="button" aria-label="Sort by Rating. Activate to sort descending.">
+                                    <span>Rating</span>
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-numeric" data-sort-key="supportResolution" aria-sort="none">
+                                <button class="th-sort-btn" type="button" aria-label="Sort by Support Resolution. Activate to sort descending.">
+                                    <span>Support</span>
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-numeric" data-sort-key="lastUpdated" aria-sort="none">
+                                <button class="th-sort-btn" type="button" aria-label="Sort by Last Updated. Activate to sort descending.">
+                                    <span>Last Updated</span>
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="plugins-body"></tbody>

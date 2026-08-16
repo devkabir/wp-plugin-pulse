@@ -145,24 +145,44 @@ export function createPluginRow(plugin: NormalizedPlugin): HTMLTableRowElement {
   if (plugin.requiredPlugins && plugin.requiredPlugins.length > 0) {
     addDetail('Requires:', plugin.requiredPlugins.join(', '));
   }
-  addDetail('Downloads (lifetime):', `${plugin.lifetimeDownloadsDisplay} cumulative`);
-  
-  if (plugin.downloadUrl) {
-    const dlLink = el('a', 'details-link', 'Download .zip');
-    dlLink.href = plugin.downloadUrl;
-    dlLink.target = '_blank';
-    dlLink.rel = 'noopener noreferrer';
-    detailsPanel.append(dlLink);
-  }
+    addDetail('Downloads (lifetime):', `${plugin.lifetimeDownloadsDisplay} cumulative`);
 
-  detailsToggle.addEventListener('click', () => {
-    const isHidden = detailsPanel.hidden;
-    detailsPanel.hidden = !isHidden;
-    detailsToggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-  });
+    if (plugin.tags && plugin.tags.length > 0) {
+      const tagsRow = el('div', 'details-section details-tags-section');
+      tagsRow.append(el('span', 'details-label', 'Tags:'));
+      const tagsList = el('div', 'plugin-tags-list');
+      for (const tag of plugin.tags) {
+        const tagBtn = el('button', 'plugin-tag-chip', tag);
+        tagBtn.type = 'button';
+        tagBtn.setAttribute('data-tag', tag);
+        tagBtn.setAttribute('title', `Explore plugins tagged "${tag}"`);
+        tagBtn.setAttribute('aria-label', `Explore plugins tagged "${tag}"`);
+        tagBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          tagBtn.dispatchEvent(new CustomEvent('select-tag', { bubbles: true, detail: { tag } }));
+        });
+        tagsList.append(tagBtn);
+      }
+      tagsRow.append(tagsList);
+      detailsPanel.append(tagsRow);
+    }
+    
+    if (plugin.downloadUrl) {
+      const dlLink = el('a', 'details-link', 'Download .zip');
+      dlLink.href = plugin.downloadUrl;
+      dlLink.target = '_blank';
+      dlLink.rel = 'noopener noreferrer';
+      detailsPanel.append(dlLink);
+    }
 
-  infoDiv.append(detailsPanel);
-  identityDiv.append(iconWrap, infoDiv);
+    detailsToggle.addEventListener('click', () => {
+      const isHidden = detailsPanel.hidden;
+      detailsPanel.hidden = !isHidden;
+      detailsToggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+    });
+
+    infoDiv.append(detailsPanel);
+    identityDiv.append(iconWrap, infoDiv);
   nameCell.append(identityDiv);
 
   // ==========================================
