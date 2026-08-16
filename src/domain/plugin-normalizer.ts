@@ -127,6 +127,21 @@ function normalizePlugin(raw: RawPluginRecord, now: number): NormalizedPlugin {
   };
 }
 
+export function normalizeSinglePluginResponse(value: unknown, now = Date.now()): NormalizedPlugin {
+  if (!isRecord(value)) {
+    throw new Error('Plugin request returned an invalid plugin record.');
+  }
+  if (value.error) {
+    throw new Error(typeof value.error === 'string' ? value.error : 'Plugin not found.');
+  }
+  const slug = text(value.slug);
+  if (!slug) {
+    throw new Error('Plugin record is missing a valid slug.');
+  }
+
+  return normalizePlugin(value as RawPluginRecord, now);
+}
+
 export function normalizePluginResponse(value: unknown, now = Date.now()): NormalizedPluginCollection {
   if (!isRecord(value) || !Array.isArray(value.plugins)) {
     throw new Error('Plugin request returned an invalid plugin collection.');
@@ -147,3 +162,4 @@ export function normalizePluginResponse(value: unknown, now = Date.now()): Norma
     totalResults,
   };
 }
+

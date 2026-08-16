@@ -23,7 +23,7 @@ export function classifyError(error: unknown): AppError {
 
   if (typeof error === 'object' && error !== null && 'kind' in error && 'message' in error) {
     const candidate = error as { kind: string; message: unknown; statusCode?: unknown };
-    const validKinds: ErrorKind[] = ['network', 'http', 'invalid_response', 'unknown'];
+    const validKinds: ErrorKind[] = ['network', 'http', 'invalid_response', 'not_found', 'unknown'];
     const kind = validKinds.includes(candidate.kind as ErrorKind) ? (candidate.kind as ErrorKind) : 'unknown';
     return {
       kind,
@@ -46,10 +46,25 @@ export function classifyError(error: unknown): AppError {
     const httpMatch = msg.match(/status (\d+)/i) || msg.match(/HTTP (\d+)/i);
     if (httpMatch) {
       const statusCode = parseInt(httpMatch[1], 10);
+      if (statusCode === 404) {
+        return {
+          kind: 'not_found',
+          message: 'The requested plugin could not be found on WordPress.org.',
+          statusCode: 404,
+        };
+      }
       return {
         kind: 'http',
         message: `Plugin request failed with HTTP ${statusCode}. Please try again.`,
         statusCode,
+      };
+    }
+
+    if (msg.includes('not found') || msg.includes('Not found') || msg.includes('Plugin not found')) {
+      return {
+        kind: 'not_found',
+        message: 'The requested plugin could not be found on WordPress.org.',
+        statusCode: 404,
       };
     }
 

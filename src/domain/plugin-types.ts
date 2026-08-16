@@ -114,7 +114,7 @@ export interface NormalizedPluginCollection {
   totalResults: number;
 }
 
-export type ErrorKind = 'network' | 'http' | 'invalid_response' | 'unknown';
+export type ErrorKind = 'network' | 'http' | 'invalid_response' | 'not_found' | 'unknown';
 
 export interface AppError {
   kind: ErrorKind;
