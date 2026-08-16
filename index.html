@@ -4,8 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
     <meta name="description" content="Compare WordPress.org plugin activity, ratings, and support metrics at a glance.">
     <title>WP Plugin Pulse — Compare WordPress.org Plugins</title>
+    <script>
+        (function () {
+            try {
+                var stored = localStorage.getItem('wp_plugin_pulse_theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+                var metaColorScheme = document.querySelector('meta[name="color-scheme"]');
+                if (metaColorScheme) {
+                    metaColorScheme.content = theme;
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700&display=swap" rel="stylesheet">
@@ -23,6 +39,18 @@
                         <h1 class="site-title">WP Plugin Pulse</h1>
                         <p class="site-tagline">Compare activity, ratings &amp; support signals for WordPress.org plugins</p>
                     </div>
+                </div>
+                <div class="header-actions">
+                    <button
+                        id="theme-toggle"
+                        class="theme-toggle-btn"
+                        type="button"
+                        aria-label="Switch theme"
+                        title="Switch theme"
+                    >
+                        <i data-lucide="sun" class="theme-icon theme-icon--sun" aria-hidden="true"></i>
+                        <i data-lucide="moon" class="theme-icon theme-icon--moon" aria-hidden="true"></i>
+                    </button>
                 </div>
             </div>
         </header>

@@ -1,8 +1,9 @@
 import './style.css';
-import { createIcons, Activity, Search } from 'lucide';
+import { createIcons, Activity, Search, Sun, Moon } from 'lucide';
 import { fetchPlugins } from './api/plugins';
 import { renderPluginTable } from './components/plugin-table';
 import { appState, beginLoading, failLoading, finishLoading } from './state/app-state';
+import { initTheme } from './utils/theme';
 
 let activeRequest: AbortController | null = null;
 
@@ -58,6 +59,7 @@ function initControls(): void {
   });
 }
 
-createIcons({ icons: { Activity, Search }, attrs: { 'stroke-width': 1.75 } });
+initTheme();
+createIcons({ icons: { Activity, Search, Sun, Moon }, attrs: { 'stroke-width': 1.75 } });
 initControls();
 void loadPlugins();
