@@ -233,15 +233,20 @@ export function renderKpiSummary(state: AppState): void {
   // Update context note
   const context = section.querySelector<HTMLElement>('.kpi-context');
   if (context) {
-    const tag = state.activeTag;
+    const query = state.activeQuery;
     const loaded = state.plugins.length;
     const total = state.totalResults;
     const loadedPagesCount = state.loadedPages.length;
     const totalPages = state.totalPages;
 
-    context.textContent =
-      !metrics.isFullyLoaded
-        ? `Based on ${loaded} of ${total} plugins tagged "${tag}" (${loadedPagesCount} of ${totalPages} pages loaded). Load all pages for complete competitive landscape.`
-        : `Based on all ${total} plugins tagged "${tag}" across ${totalPages} ${totalPages === 1 ? 'page' : 'pages'}.`;
+    if (query.mode === 'slug') {
+      context.textContent = `Showing metrics for plugin with slug "${query.value}".`;
+    } else {
+      const qualifier = query.mode === 'search' ? `matching keyword "${query.value}"` : `tagged "${query.value}"`;
+      context.textContent =
+        !metrics.isFullyLoaded
+          ? `Based on ${loaded} of ${total} plugins ${qualifier} (${loadedPagesCount} of ${totalPages} pages loaded). Load all pages for complete competitive landscape.`
+          : `Based on all ${total} plugins ${qualifier} across ${totalPages} ${totalPages === 1 ? 'page' : 'pages'}.`;
+    }
   }
 }

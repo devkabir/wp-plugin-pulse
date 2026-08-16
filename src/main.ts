@@ -1,6 +1,6 @@
 import './style.css';
 import { createIcons, Activity, Search, Sun, Moon, Filter, X, Table, LayoutGrid } from 'lucide';
-import { fetchPlugins } from './api/plugins';
+import { fetchPluginCollection } from './api/plugins';
 import { renderPluginTable } from './components/plugin-table';
 import { renderCardView } from './components/card-view';
 import { renderKpiSummary } from './components/kpi-summary';
@@ -14,12 +14,13 @@ import {
   failLoading,
   failLoadingPage,
   finishLoading,
+  normalizeQuery,
   setActiveView,
   setQuery,
   setSorting,
   toggleSort,
 } from './state/app-state';
-import type { ActiveView, SortDirection, SortKey } from './domain/plugin-types';
+import type { ActiveView, PluginQuery, QueryMode, SortDirection, SortKey } from './domain/plugin-types';
 import { initTheme } from './utils/theme';
 
 let activeRequest: AbortController | null = null;
@@ -59,14 +60,18 @@ function updateSortSelect(key: SortKey, direction: SortDirection): void {
 function updateBusyState(isBusy: boolean): void {
   const tableWrapper = document.getElementById('table-view-wrapper');
   const cardsWrapper = document.getElementById('cards-view-wrapper');
-  const tagSubmit = document.getElementById('tag-submit') as HTMLButtonElement | null;
+  const searchSubmit = (document.getElementById('search-submit') || document.getElementById('tag-submit')) as HTMLButtonElement | null;
+  const searchModeSelect = document.getElementById('search-mode-select') as HTMLSelectElement | null;
 
   tableWrapper?.setAttribute('aria-busy', isBusy ? 'true' : 'false');
   cardsWrapper?.setAttribute('aria-busy', isBusy ? 'true' : 'false');
 
-  if (tagSubmit) {
-    tagSubmit.disabled = isBusy;
-    tagSubmit.setAttribute('aria-disabled', isBusy ? 'true' : 'false');
+  if (searchSubmit) {
+    searchSubmit.disabled = isBusy;
+    searchSubmit.setAttribute('aria-disabled', isBusy ? 'true' : 'false');
+  }
+  if (searchModeSelect) {
+    searchModeSelect.disabled = isBusy;
   }
 }
 
@@ -81,7 +86,7 @@ function renderApp(): void {
   updateBusyState(appState.status === 'loading');
 
   const onRetry = (): void => {
-    void loadPlugins(appState.failedTag || appState.activeTag, false);
+    void loadPlugins(appState.failedQuery || appState.activeQuery, false);
   };
 
   // Maintain exactly ONE active interactive view in the accessibility tree
@@ -106,11 +111,18 @@ function renderApp(): void {
   refreshIcons();
 }
 
-async function loadPlugins(tag = 'form-builder', isRefresh = false): Promise<void> {
+async function loadPlugins(
+  query: PluginQuery | string = { mode: 'tag', value: 'form-builder' },
+  isRefresh = false
+): Promise<void> {
+  const normalizedQuery = normalizeQuery(query);
+  if (!normalizedQuery.value) return;
+
   // Guard against duplicate matching submissions while a matching request is active
   if (
     appState.status === 'loading' &&
-    appState.activeTag.toLowerCase() === tag.trim().toLowerCase() &&
+    appState.activeQuery.mode === normalizedQuery.mode &&
+    appState.activeQuery.value.toLowerCase() === normalizedQuery.value.toLowerCase() &&
     !isRefresh
   ) {
     return;
@@ -121,18 +133,37 @@ async function loadPlugins(tag = 'form-builder', isRefresh = false): Promise<voi
   activeRequest = request;
   isLoadingAllRemaining = false;
 
-  beginLoading(tag, isRefresh);
+  beginLoading(normalizedQuery, isRefresh);
+
+  // Sync inputs with the query
+  const searchModeSelect = document.getElementById('search-mode-select') as HTMLSelectElement | null;
+  const filterInput = document.getElementById('filter-input') as HTMLInputElement | null;
+  const filterClear = document.getElementById('filter-clear') as HTMLButtonElement | null;
+
+  if (searchModeSelect) {
+    searchModeSelect.value = normalizedQuery.mode;
+  }
+
+  // Reset client filter when server query changes (Requirement 7)
+  if (filterInput) {
+    filterInput.value = '';
+  }
+  if (filterClear) {
+    filterClear.hidden = true;
+  }
+
+  setActiveChip(normalizedQuery.mode === 'tag' ? normalizedQuery.value : null);
   renderApp();
 
   try {
-    const collection = await fetchPlugins(tag, 1, request.signal);
+    const collection = await fetchPluginCollection(normalizedQuery, 1, request.signal);
     if (request !== activeRequest) return;
     finishLoading(collection);
     renderApp();
   } catch (error) {
     if (request.signal.aborted || request !== activeRequest) return;
     console.error(error);
-    failLoading(error, tag);
+    failLoading(error, normalizedQuery);
     renderApp();
   } finally {
     if (request === activeRequest) {
@@ -143,15 +174,29 @@ async function loadPlugins(tag = 'form-builder', isRefresh = false): Promise<voi
 }
 
 async function loadPluginPage(page: number, shouldFocus = true): Promise<boolean> {
+  // Slug mode bypasses pagination (Requirement 6)
+  if (appState.activeQuery.mode === 'slug') {
+    return false;
+  }
+
   if (appState.loadingMorePage !== null || appState.loadedPages.includes(page)) {
     return false;
   }
+
+  const queryAtStart = { ...appState.activeQuery };
 
   beginLoadingPage(page);
   renderApp();
 
   try {
-    const collection = await fetchPlugins(appState.activeTag, page);
+    const collection = await fetchPluginCollection(queryAtStart, page);
+    // Ignore response if user switched queries in the meantime (Requirement 7 / 9)
+    if (
+      appState.activeQuery.mode !== queryAtStart.mode ||
+      appState.activeQuery.value !== queryAtStart.value
+    ) {
+      return false;
+    }
     appendLoadedPage(collection);
     renderApp();
 
@@ -169,6 +214,12 @@ async function loadPluginPage(page: number, shouldFocus = true): Promise<boolean
     }
     return true;
   } catch (error) {
+    if (
+      appState.activeQuery.mode !== queryAtStart.mode ||
+      appState.activeQuery.value !== queryAtStart.value
+    ) {
+      return false;
+    }
     console.error(`Error loading page ${page}:`, error);
     failLoadingPage(page, error);
     renderApp();
@@ -180,7 +231,7 @@ async function loadPluginPage(page: number, shouldFocus = true): Promise<boolean
 }
 
 async function loadAllRemainingPages(): Promise<void> {
-  if (isLoadingAllRemaining || appState.loadingMorePage !== null) return;
+  if (isLoadingAllRemaining || appState.loadingMorePage !== null || appState.activeQuery.mode === 'slug') return;
   isLoadingAllRemaining = true;
 
   try {
@@ -209,49 +260,86 @@ async function loadAllRemainingPages(): Promise<void> {
 
 function setActiveChip(activeTag: string | null): void {
   document.querySelectorAll<HTMLButtonElement>('#tag-chips .chip').forEach((chip) => {
-    chip.classList.toggle('chip--active', chip.dataset.tag === activeTag);
+    chip.classList.toggle(
+      'chip--active',
+      appState.activeQuery.mode === 'tag' && chip.dataset.tag?.toLowerCase() === activeTag?.toLowerCase()
+    );
   });
 }
 
 function initControls(): void {
-  const tagInput = document.getElementById('tag-input') as HTMLInputElement | null;
+  const searchInput = (document.getElementById('search-input') || document.getElementById('tag-input')) as HTMLInputElement | null;
+  const searchSubmit = (document.getElementById('search-submit') || document.getElementById('tag-submit')) as HTMLButtonElement | null;
+  const searchModeSelect = document.getElementById('search-mode-select') as HTMLSelectElement | null;
   const filterInput = document.getElementById('filter-input') as HTMLInputElement | null;
   const filterClear = document.getElementById('filter-clear') as HTMLButtonElement | null;
   const pluginsTable = document.getElementById('plugins-table');
 
-  const submitTag = (): void => {
-    const tag = tagInput?.value.trim();
-    if (!tag) return;
-    if (appState.status === 'loading' && appState.activeTag.toLowerCase() === tag.toLowerCase()) return;
-    setActiveChip(null);
-    void loadPlugins(tag);
+  const updateSearchPlaceholder = (mode: QueryMode): void => {
+    if (!searchInput) return;
+    if (mode === 'slug') {
+      searchInput.placeholder = 'Search by plugin slug (e.g. contact-form-7)…';
+    } else if (mode === 'search') {
+      searchInput.placeholder = 'Search WordPress.org by keyword…';
+    } else {
+      searchInput.placeholder = 'Search WordPress.org by tag…';
+    }
   };
 
-  // Tag Chips
+  searchModeSelect?.addEventListener('change', () => {
+    const mode = (searchModeSelect.value as QueryMode) || 'tag';
+    updateSearchPlaceholder(mode);
+  });
+
+  const submitSearch = (): void => {
+    const val = searchInput?.value.trim();
+    if (!val) return;
+    const mode = (searchModeSelect?.value as QueryMode) || 'tag';
+    const query: PluginQuery = { mode, value: val };
+
+    if (
+      appState.status === 'loading' &&
+      appState.activeQuery.mode === query.mode &&
+      appState.activeQuery.value.toLowerCase() === query.value.toLowerCase()
+    ) {
+      return;
+    }
+
+    void loadPlugins(query);
+  };
+
+  // Tag Chips (Requirement 5: Tag chips always submit { mode: 'tag', value: chipTag })
   document.getElementById('tag-chips')?.addEventListener('click', (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
     const chip = target.closest<HTMLButtonElement>('.chip');
     if (!chip?.dataset.tag) return;
     const tag = chip.dataset.tag;
-    if (appState.status === 'loading' && appState.activeTag.toLowerCase() === tag.toLowerCase()) return;
-    setActiveChip(tag);
-    if (tagInput) tagInput.value = '';
-    void loadPlugins(tag);
+    const query: PluginQuery = { mode: 'tag', value: tag };
+    if (
+      appState.status === 'loading' &&
+      appState.activeQuery.mode === 'tag' &&
+      appState.activeQuery.value.toLowerCase() === tag.toLowerCase()
+    ) {
+      return;
+    }
+    if (searchModeSelect) searchModeSelect.value = 'tag';
+    if (searchInput) searchInput.value = '';
+    void loadPlugins(query);
   });
 
-  // Tag Search Input
-  document.getElementById('tag-submit')?.addEventListener('click', submitTag);
-  tagInput?.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') submitTag();
+  // Server Search Input & Submit
+  searchSubmit?.addEventListener('click', submitSearch);
+  searchInput?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') submitSearch();
   });
 
   // Retry event
   document.addEventListener('retry-plugin-request', () => {
-    void loadPlugins(appState.failedTag || appState.activeTag, false);
+    void loadPlugins(appState.failedQuery || appState.activeQuery, false);
   });
 
-  // Client-Side Search Filter Input
+  // Client-Side Search Filter Input (Requirement 3: "Filter loaded results")
   if (filterInput) {
     filterInput.addEventListener('input', () => {
       const query = filterInput.value;
@@ -328,9 +416,9 @@ function initControls(): void {
     const tag = customEvent.detail?.tag;
     if (!tag) return;
 
-    setActiveChip(tag);
-    if (tagInput) tagInput.value = '';
-    void loadPlugins(tag);
+    if (searchModeSelect) searchModeSelect.value = 'tag';
+    if (searchInput) searchInput.value = '';
+    void loadPlugins({ mode: 'tag', value: tag });
   });
 
   // Pagination Custom Events
@@ -351,4 +439,5 @@ initTheme();
 refreshIcons();
 initControls();
 void loadPlugins();
+
 

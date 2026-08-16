@@ -1,4 +1,4 @@
-import type { AppState, SortKey } from '../domain/plugin-types';
+import type { AppState, PluginQuery, SortKey } from '../domain/plugin-types';
 
 export const SORT_LABELS: Record<SortKey, string> = {
   name: 'Plugin Name',
@@ -9,22 +9,54 @@ export const SORT_LABELS: Record<SortKey, string> = {
   lastUpdated: 'Last Updated',
 };
 
+export function formatQueryQualifier(query: PluginQuery): string {
+  if (query.mode === 'slug') {
+    return `with slug "${query.value}"`;
+  }
+  if (query.mode === 'search') {
+    return `matching keyword "${query.value}"`;
+  }
+  return `tagged "${query.value}"`;
+}
+
 export function formatResultsMeta(state: AppState, visibleCount: number): string {
+  const activeQ = state.activeQuery;
+
   if (state.status === 'loading') {
     if (state.isBackgroundRefreshing) {
-      return `Updating plugins tagged "${state.activeTag}"…`;
+      if (activeQ.mode === 'slug') {
+        return `Updating plugin with slug "${activeQ.value}"…`;
+      }
+      if (activeQ.mode === 'search') {
+        return `Updating plugins matching keyword "${activeQ.value}"…`;
+      }
+      return `Updating plugins tagged "${activeQ.value}"…`;
     }
-    return `Loading plugins tagged "${state.activeTag}"…`;
+    if (activeQ.mode === 'slug') {
+      return `Loading plugin with slug "${activeQ.value}"…`;
+    }
+    if (activeQ.mode === 'search') {
+      return `Loading plugins matching keyword "${activeQ.value}"…`;
+    }
+    return `Loading plugins tagged "${activeQ.value}"…`;
   }
 
   if (state.status === 'error') {
-    const tag = state.failedTag || state.activeTag;
+    const q = state.failedQuery || activeQ;
+    const modeLabel = q.mode === 'slug' ? 'slug' : q.mode === 'search' ? 'keyword' : 'tag';
+    const prefix = q.mode === 'slug' ? 'plugin' : 'plugins';
     const msg = state.error?.message;
-    return msg ? `Failed to load plugins for "${tag}": ${msg}` : `Failed to load plugins for "${tag}".`;
+    return msg ? `Failed to load ${prefix} for ${modeLabel} "${q.value}": ${msg}` : `Failed to load ${prefix} for ${modeLabel} "${q.value}".`;
   }
 
   if (state.plugins.length === 0) {
-    return `No plugins found for tag "${state.activeTag}".`;
+    if (activeQ.mode === 'slug') {
+      return `No plugin found for slug "${activeQ.value}".`;
+    }
+    if (activeQ.mode === 'search') {
+      return `No plugins found for keyword "${activeQ.value}".`;
+    }
+    return `No plugins found for tag "${activeQ.value}".`;
   }
 
   if (visibleCount === 0) {
@@ -39,17 +71,24 @@ export function formatResultsMeta(state: AppState, visibleCount: number): string
   const loadedPagesCount = state.loadedPages.length || 1;
 
   if (state.query.trim()) {
+    if (activeQ.mode === 'slug') {
+      return `Showing 1 plugin with slug "${activeQ.value}" matching “${state.query}” (sorted by ${sortLabel}, ${sortDir})`;
+    }
     if (isPartial) {
       return `Showing ${visibleCount} of ${state.plugins.length} loaded plugins (${state.totalResults} total across ${totalPagesStr}, ${loadedPagesCount} loaded) matching “${state.query}” (sorted by ${sortLabel}, ${sortDir} among loaded plugins)`;
     }
     return `Showing ${visibleCount} of ${state.totalResults} plugins across ${totalPagesStr} matching “${state.query}” (sorted by ${sortLabel}, ${sortDir})`;
   }
 
-  if (isPartial) {
-    return `Showing ${state.plugins.length} of ${state.totalResults} plugins tagged "${state.activeTag}" (${loadedPagesCount} of ${totalPagesStr} loaded — sorted by ${sortLabel}, ${sortDir} among loaded plugins)`;
+  if (activeQ.mode === 'slug') {
+    return `Showing plugin with slug "${activeQ.value}"`;
   }
 
-  return `Showing all ${state.totalResults} plugins tagged "${state.activeTag}" across ${totalPagesStr} (sorted by ${sortLabel}, ${sortDir})`;
+  if (isPartial) {
+    return `Showing ${state.plugins.length} of ${state.totalResults} plugins ${formatQueryQualifier(activeQ)} (${loadedPagesCount} of ${totalPagesStr} loaded — sorted by ${sortLabel}, ${sortDir} among loaded plugins)`;
+  }
+
+  return `Showing all ${state.totalResults} plugins ${formatQueryQualifier(activeQ)} across ${totalPagesStr} (sorted by ${sortLabel}, ${sortDir})`;
 }
 
 export function updateResultsMeta(state: AppState, visibleCount: number): void {

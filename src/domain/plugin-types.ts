@@ -124,7 +124,7 @@ export interface AppError {
 
 export interface AppState {
   plugins: NormalizedPlugin[];
-  activeTag: string;
+  activeQuery: PluginQuery;
   query: string;
   sortKey: SortKey;
   sortDirection: SortDirection;
@@ -132,7 +132,7 @@ export interface AppState {
   status: LoadStatus;
   isBackgroundRefreshing: boolean;
   error: AppError | null;
-  failedTag: string | null;
+  failedQuery: PluginQuery | null;
   page: number;
   totalPages: number;
   totalResults: number;

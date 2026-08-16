@@ -197,12 +197,12 @@ describe('Milestone 8 — Error classification and retry paths', () => {
     expect(classified.kind).toBe('network');
   });
 
-  it('tracks failedTag and error in appState and clears them upon successful finishLoading', () => {
+  it('tracks failedQuery and error in appState and clears them upon successful finishLoading', () => {
     beginLoading('seo');
     failLoading(new PluginRequestError('Network down', 'network'), 'seo');
 
     expect(appState.status).toBe('error');
-    expect(appState.failedTag).toBe('seo');
+    expect(appState.failedQuery).toEqual({ mode: 'tag', value: 'seo' });
     expect(appState.error?.kind).toBe('network');
 
     // Simulate retry
@@ -218,7 +218,7 @@ describe('Milestone 8 — Error classification and retry paths', () => {
     });
 
     expect(appState.status).toBe('ready');
-    expect(appState.failedTag).toBeNull();
+    expect(appState.failedQuery).toBeNull();
     expect(appState.error).toBeNull();
   });
 });
@@ -251,7 +251,7 @@ describe('Milestone 8 — Background refresh and stale state', () => {
     expect(appState.status).toBe('loading');
     expect(appState.isBackgroundRefreshing).toBe(false);
     expect(appState.plugins.length).toBe(0);
-    expect(appState.activeTag).toBe('ecommerce');
+    expect(appState.activeQuery).toEqual({ mode: 'tag', value: 'ecommerce' });
   });
 });
 
@@ -343,7 +343,7 @@ describe('Milestone 8 — Layout-matched skeletons and table semantics', () => {
 describe('Milestone 8 — Live status announcements and results meta', () => {
   it('formats loading announcement for fresh load vs background refresh', () => {
     appState.status = 'loading';
-    appState.activeTag = 'form-builder';
+    appState.activeQuery = { mode: 'tag', value: 'form-builder' };
     appState.isBackgroundRefreshing = false;
     expect(formatResultsMeta(appState, 0)).toBe('Loading plugins tagged "form-builder"…');
 
@@ -353,23 +353,23 @@ describe('Milestone 8 — Live status announcements and results meta', () => {
 
   it('formats concise error announcement', () => {
     appState.status = 'error';
-    appState.activeTag = 'security';
-    appState.failedTag = 'security';
+    appState.activeQuery = { mode: 'tag', value: 'security' };
+    appState.failedQuery = { mode: 'tag', value: 'security' };
     appState.error = { kind: 'network', message: 'Unable to reach server.' };
 
-    expect(formatResultsMeta(appState, 0)).toBe('Failed to load plugins for "security": Unable to reach server.');
+    expect(formatResultsMeta(appState, 0)).toBe('Failed to load plugins for tag "security": Unable to reach server.');
   });
 
   it('formats empty directory announcement when 0 plugins found', () => {
     appState.status = 'ready';
-    appState.activeTag = 'empty-tag';
+    appState.activeQuery = { mode: 'tag', value: 'empty-tag' };
     appState.plugins = [];
     expect(formatResultsMeta(appState, 0)).toBe('No plugins found for tag "empty-tag".');
   });
 
   it('formats no filter matches announcement', () => {
     appState.status = 'ready';
-    appState.activeTag = 'form-builder';
+    appState.activeQuery = { mode: 'tag', value: 'form-builder' };
     appState.plugins = [createMockPlugin()];
     appState.query = 'xyz';
     expect(formatResultsMeta(appState, 0)).toBe('No plugins matching “xyz” found among 1 loaded plugins.');

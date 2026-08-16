@@ -29,8 +29,8 @@ export function renderPaginationControls(
   const container = document.getElementById('pagination-controls');
   if (!container) return;
 
-  // Only show pagination when collection is ready with plugins
-  if (state.status !== 'ready' || state.plugins.length === 0) {
+  // Only show pagination when collection is ready with plugins, and not in slug mode
+  if (state.status !== 'ready' || state.plugins.length === 0 || state.activeQuery.mode === 'slug') {
     container.hidden = true;
     container.replaceChildren();
     return;
@@ -82,7 +82,7 @@ export function renderPaginationControls(
     retryBtn.textContent = `Retry Page ${state.loadMoreError.page}`;
     retryBtn.setAttribute(
       'aria-label',
-      `Retry loading page ${state.loadMoreError.page} for tag "${state.activeTag}"`
+      `Retry loading page ${state.loadMoreError.page} for ${state.activeQuery.mode} "${state.activeQuery.value}"`
     );
 
     const failedPage = state.loadMoreError.page;
@@ -152,7 +152,7 @@ export function renderPaginationControls(
       loadAllBtn.textContent = `Load All Remaining Pages (${remainingPagesCount} pages)`;
       loadAllBtn.setAttribute(
         'aria-label',
-        `Load all ${remainingPagesCount} remaining pages for tag "${state.activeTag}"`
+        `Load all ${remainingPagesCount} remaining pages for ${state.activeQuery.mode} "${state.activeQuery.value}"`
       );
 
       loadAllBtn.addEventListener('click', () => {

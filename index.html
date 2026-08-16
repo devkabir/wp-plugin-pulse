@@ -56,7 +56,7 @@
         </header>
 
         <main class="main-content">
-            <section class="controls-bar" aria-label="Tag selector">
+            <section class="controls-bar" aria-label="Search and quick tag filters">
                 <div class="tag-chips" id="tag-chips" role="group" aria-label="Quick tag filters">
                     <button class="chip chip--active" data-tag="form-builder" type="button">Form Builder</button>
                     <button class="chip" data-tag="seo" type="button">SEO</button>
@@ -66,16 +66,22 @@
                     <button class="chip" data-tag="backup" type="button">Backup</button>
                 </div>
                 <div class="search-wrap">
-                    <label for="tag-input" class="sr-only">Custom tag</label>
+                    <label for="search-mode-select" class="sr-only">Search mode</label>
+                    <select id="search-mode-select" class="search-mode-select" aria-label="Search mode">
+                        <option value="tag" selected>Tag</option>
+                        <option value="search">Keyword</option>
+                        <option value="slug">Slug</option>
+                    </select>
+                    <label for="search-input" class="sr-only">Search WordPress.org</label>
                     <input
                         type="text"
-                        id="tag-input"
-                        class="tag-input"
-                        placeholder="Search by tag…"
+                        id="search-input"
+                        class="search-input tag-input"
+                        placeholder="Search WordPress.org…"
                         autocomplete="off"
                         spellcheck="false"
                     >
-                    <button id="tag-submit" class="tag-submit-btn" type="button" aria-label="Load plugins for tag">
+                    <button id="search-submit" class="search-submit-btn tag-submit-btn" type="button" aria-label="Search WordPress.org">
                         <i data-lucide="search" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -92,13 +98,13 @@
             <section class="filter-toolbar" aria-label="Filter and display options">
                 <div class="filter-toolbar-inner">
                     <div class="filter-wrap">
-                        <label for="filter-input" class="sr-only">Filter loaded plugins</label>
+                        <label for="filter-input" class="sr-only">Filter loaded results</label>
                         <i data-lucide="filter" class="filter-icon" aria-hidden="true"></i>
                         <input
                             type="text"
                             id="filter-input"
                             class="filter-input"
-                            placeholder="Filter loaded plugins by name, author, tag, or description…"
+                            placeholder="Filter loaded results by name, author, tag, or description…"
                             autocomplete="off"
                             spellcheck="false"
                         >

@@ -1,10 +1,17 @@
 import { classifyError } from '../domain/error-classifier';
-import type { ActiveView, AppState, NormalizedPlugin, NormalizedPluginCollection, SortDirection, SortKey } from '../domain/plugin-types';
+import type { ActiveView, AppState, NormalizedPlugin, NormalizedPluginCollection, PluginQuery, SortDirection, SortKey } from '../domain/plugin-types';
 import { getStoredView, setStoredView } from '../utils/view-preference';
+
+export function normalizeQuery(query: PluginQuery | string): PluginQuery {
+  if (typeof query === 'string') {
+    return { mode: 'tag', value: query.trim() };
+  }
+  return { mode: query.mode, value: query.value.trim() };
+}
 
 export const appState: AppState = {
   plugins: [],
-  activeTag: 'form-builder',
+  activeQuery: { mode: 'tag', value: 'form-builder' },
   query: '',
   sortKey: 'activeInstalls',
   sortDirection: 'desc',
@@ -12,7 +19,7 @@ export const appState: AppState = {
   status: 'idle',
   isBackgroundRefreshing: false,
   error: null,
-  failedTag: null,
+  failedQuery: null,
   page: 1,
   totalPages: 1,
   totalResults: 0,
@@ -51,15 +58,22 @@ export function mergePluginCollections(
   return merged;
 }
 
-export function beginLoading(tag: string, isRefresh = false): void {
-  if (isRefresh && appState.plugins.length > 0 && appState.activeTag === tag) {
+export function beginLoading(query: PluginQuery | string, isRefresh = false): void {
+  const normQuery = normalizeQuery(query);
+  if (
+    isRefresh &&
+    appState.plugins.length > 0 &&
+    appState.activeQuery.mode === normQuery.mode &&
+    appState.activeQuery.value.toLowerCase() === normQuery.value.toLowerCase()
+  ) {
     appState.isBackgroundRefreshing = true;
     appState.status = 'loading';
     appState.error = null;
     return;
   }
 
-  appState.activeTag = tag;
+  appState.activeQuery = normQuery;
+  appState.query = '';
   appState.status = 'loading';
   appState.isBackgroundRefreshing = false;
   appState.error = null;
@@ -81,16 +95,16 @@ export function finishLoading(collection: NormalizedPluginCollection): void {
   appState.status = 'ready';
   appState.isBackgroundRefreshing = false;
   appState.error = null;
-  appState.failedTag = null;
+  appState.failedQuery = null;
   appState.loadingMorePage = null;
   appState.loadMoreError = null;
 }
 
-export function failLoading(error: unknown, tag?: string): void {
+export function failLoading(error: unknown, query?: PluginQuery | string): void {
   appState.status = 'error';
   appState.isBackgroundRefreshing = false;
   appState.error = classifyError(error);
-  appState.failedTag = tag ?? appState.activeTag;
+  appState.failedQuery = query ? normalizeQuery(query) : appState.activeQuery;
   appState.loadingMorePage = null;
   appState.loadMoreError = null;
 }

@@ -1,7 +1,36 @@
-import type { AppError, AppState } from '../domain/plugin-types';
+import type { AppError, AppState, PluginQuery } from '../domain/plugin-types';
 import { selectVisiblePlugins } from '../domain/plugin-selectors';
 import { createPluginCard } from './plugin-card';
 import { updateResultsMeta } from '../utils/results-meta';
+
+function formatQueryPhrase(query: PluginQuery | string): { phrase: string; target: string; ariaLabel: string } {
+  if (typeof query === 'string') {
+    return {
+      phrase: `tag “${query}”`,
+      target: `plugins for tag “${query}”`,
+      ariaLabel: `plugins for tag ${query}`,
+    };
+  }
+  if (query.mode === 'slug') {
+    return {
+      phrase: `slug “${query.value}”`,
+      target: `plugin with slug “${query.value}”`,
+      ariaLabel: `plugin for slug ${query.value}`,
+    };
+  }
+  if (query.mode === 'search') {
+    return {
+      phrase: `keyword “${query.value}”`,
+      target: `plugins for keyword “${query.value}”`,
+      ariaLabel: `plugins for keyword ${query.value}`,
+    };
+  }
+  return {
+    phrase: `tag “${query.value}”`,
+    target: `plugins for tag “${query.value}”`,
+    ariaLabel: `plugins for tag ${query.value}`,
+  };
+}
 
 function createCardSkeletons(count = 6): DocumentFragment {
   const frag = document.createDocumentFragment();
@@ -71,9 +100,10 @@ export function createCardLoadingState(): HTMLElement {
 
 export function createCardErrorState(
   error: AppError | null,
-  tag: string,
+  query: PluginQuery | string,
   onRetry: () => void
 ): HTMLElement {
+  const { target, ariaLabel } = formatQueryPhrase(query);
   const wrap = document.createElement('div');
   wrap.className = 'card-status-box card-status-box--error';
 
@@ -96,13 +126,13 @@ export function createCardErrorState(
 
   const text = document.createElement('p');
   text.className = 'card-status-message';
-  text.textContent = error?.message || `Unable to load plugins for tag “${tag}”. Please try again.`;
+  text.textContent = error?.message || `Unable to load ${target}. Please try again.`;
 
   const retryBtn = document.createElement('button');
   retryBtn.type = 'button';
   retryBtn.className = 'btn-retry-tag';
   retryBtn.id = 'btn-retry-cards';
-  retryBtn.setAttribute('aria-label', `Retry loading plugins for tag ${tag}`);
+  retryBtn.setAttribute('aria-label', `Retry loading ${ariaLabel}`);
   retryBtn.textContent = 'Retry Request';
   retryBtn.addEventListener('click', onRetry);
 
@@ -110,7 +140,8 @@ export function createCardErrorState(
   return createCardStatusState('card-status--error', wrap, 'alert');
 }
 
-export function createCardEmptyTagState(tag: string): HTMLElement {
+export function createCardEmptyRow(query: PluginQuery | string): HTMLElement {
+  const { phrase } = formatQueryPhrase(query);
   const wrap = document.createElement('div');
   wrap.className = 'card-status-box card-status-box--empty';
 
@@ -125,11 +156,13 @@ export function createCardEmptyTagState(tag: string): HTMLElement {
 
   const text = document.createElement('p');
   text.className = 'card-status-message';
-  text.textContent = `No plugins found in the WordPress.org directory for tag “${tag}”.`;
+  text.textContent = `No plugins found in the WordPress.org directory for ${phrase}.`;
 
   wrap.append(icon, heading, text);
   return createCardStatusState('card-status--empty-tag', wrap);
 }
+
+export const createCardEmptyTagState = createCardEmptyRow;
 
 export function createCardNoMatchesState(query: string, onClear: () => void): HTMLElement {
   const wrap = document.createElement('div');
@@ -192,7 +225,7 @@ export function renderCardView(
     container.replaceChildren(
       createCardErrorState(
         state.error,
-        state.failedTag || state.activeTag,
+        state.failedQuery || state.activeQuery,
         onRetry ?? (() => document.dispatchEvent(new CustomEvent('retry-plugin-request')))
       )
     );
@@ -202,7 +235,7 @@ export function renderCardView(
 
   // Ready state: check if zero plugins loaded
   if (state.plugins.length === 0) {
-    container.replaceChildren(createCardEmptyTagState(state.activeTag));
+    container.replaceChildren(createCardEmptyRow(state.activeQuery));
     updateResultsMeta(state, 0);
     return;
   }

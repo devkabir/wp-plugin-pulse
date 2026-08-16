@@ -1,4 +1,4 @@
-import type { AppError } from '../domain/plugin-types';
+import type { AppError, PluginQuery } from '../domain/plugin-types';
 
 export function createTableSkeletons(count = 6): DocumentFragment {
   const frag = document.createDocumentFragment();
@@ -67,11 +67,41 @@ export function createTableSkeletons(count = 6): DocumentFragment {
   return frag;
 }
 
+function formatQueryPhrase(query: PluginQuery | string): { phrase: string; target: string; ariaLabel: string } {
+  if (typeof query === 'string') {
+    return {
+      phrase: `tag “${query}”`,
+      target: `plugins for tag “${query}”`,
+      ariaLabel: `plugins for tag ${query}`,
+    };
+  }
+  if (query.mode === 'slug') {
+    return {
+      phrase: `slug “${query.value}”`,
+      target: `plugin with slug “${query.value}”`,
+      ariaLabel: `plugin for slug ${query.value}`,
+    };
+  }
+  if (query.mode === 'search') {
+    return {
+      phrase: `keyword “${query.value}”`,
+      target: `plugins for keyword “${query.value}”`,
+      ariaLabel: `plugins for keyword ${query.value}`,
+    };
+  }
+  return {
+    phrase: `tag “${query.value}”`,
+    target: `plugins for tag “${query.value}”`,
+    ariaLabel: `plugins for tag ${query.value}`,
+  };
+}
+
 export function createTableErrorRow(
   error: AppError | null,
-  tag: string,
+  query: PluginQuery | string,
   onRetry: () => void
 ): HTMLTableRowElement {
+  const { target, ariaLabel } = formatQueryPhrase(query);
   const row = document.createElement('tr');
   row.className = 'table-status-row table-status-row--error';
 
@@ -103,13 +133,13 @@ export function createTableErrorRow(
 
   const msg = document.createElement('p');
   msg.className = 'table-status-message';
-  msg.textContent = error?.message || `Unable to load plugins for tag “${tag}”. Please try again.`;
+  msg.textContent = error?.message || `Unable to load ${target}. Please try again.`;
 
   const retryBtn = document.createElement('button');
   retryBtn.type = 'button';
   retryBtn.className = 'btn-retry-tag';
   retryBtn.id = 'btn-retry-table';
-  retryBtn.setAttribute('aria-label', `Retry loading plugins for tag ${tag}`);
+  retryBtn.setAttribute('aria-label', `Retry loading ${ariaLabel}`);
   retryBtn.textContent = 'Retry Request';
   retryBtn.addEventListener('click', onRetry);
 
@@ -157,7 +187,8 @@ export function createTableNoMatchesRow(query: string, onClear: () => void): HTM
   return row;
 }
 
-export function createTableEmptyTagRow(tag: string): HTMLTableRowElement {
+export function createTableEmptyRow(query: PluginQuery | string): HTMLTableRowElement {
+  const { phrase } = formatQueryPhrase(query);
   const row = document.createElement('tr');
   row.className = 'table-status-row table-status-row--empty';
 
@@ -181,7 +212,7 @@ export function createTableEmptyTagRow(tag: string): HTMLTableRowElement {
 
   const msg = document.createElement('p');
   msg.className = 'table-status-message';
-  msg.textContent = `No plugins found in the WordPress.org directory for tag “${tag}”.`;
+  msg.textContent = `No plugins found in the WordPress.org directory for ${phrase}.`;
 
   container.append(icon, heading, msg);
   cell.append(container);
@@ -190,9 +221,10 @@ export function createTableEmptyTagRow(tag: string): HTMLTableRowElement {
 }
 
 // Aliases for compatibility
+export const createTableEmptyTagRow = createTableEmptyRow;
 export const createLoadingRow = createTableSkeletons;
-export const createEmptyCollectionRow = createTableEmptyTagRow;
-export const createErrorRow = (error?: AppError | null, tag = 'plugin', onRetry?: () => void) =>
-  createTableErrorRow(error ?? null, tag, onRetry ?? (() => document.dispatchEvent(new CustomEvent('retry-plugin-request'))));
+export const createEmptyCollectionRow = createTableEmptyRow;
+export const createErrorRow = (error?: AppError | null, query: PluginQuery | string = { mode: 'tag', value: 'plugin' }, onRetry?: () => void) =>
+  createTableErrorRow(error ?? null, query, onRetry ?? (() => document.dispatchEvent(new CustomEvent('retry-plugin-request'))));
 export const createNoMatchesRowAlias = createTableNoMatchesRow;
 

@@ -474,6 +474,30 @@ body {
 }
 
 /* Inner input inside search wrap: STRICTLY no duplicate border or background */
+.search-mode-select {
+  height: 100%;
+  padding: 0 0.5rem 0 0.75rem;
+  background-color: var(--color-surface);
+  border: none;
+  border-right: 1px solid var(--color-input-border);
+  border-radius: 0;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast);
+}
+
+.search-mode-select:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.search-wrap .search-input,
 .search-wrap .tag-input,
 .search-wrap input[type="text"],
 .search-wrap input {
@@ -492,10 +516,12 @@ body {
   line-height: normal;
 }
 
+.search-wrap .search-input::placeholder,
 .search-wrap .tag-input::placeholder {
   color: var(--color-text-faint);
 }
 
+.search-submit-btn,
 .tag-submit-btn {
   display: flex;
   align-items: center;
@@ -513,6 +539,8 @@ body {
     color var(--duration-fast);
 }
 
+.search-submit-btn i,
+.search-submit-btn svg,
 .tag-submit-btn i,
 .tag-submit-btn svg {
   display: block;
@@ -520,19 +548,21 @@ body {
   height: 17px;
 }
 
+.search-submit-btn:hover,
 .tag-submit-btn:hover {
   background: rgba(221, 161, 94, 0.25);
   color: var(--color-cta);
 }
 
+.search-submit-btn:focus-visible,
 .tag-submit-btn:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
 }
 
 /* Standalone inputs & textareas (outside composite search-wrap) */
-input:not(.tag-input):not([type="checkbox"]):not([type="radio"]),
-select,
+input:not(.tag-input):not(.search-input):not([type="checkbox"]):not([type="radio"]),
+select:not(.search-mode-select),
 textarea {
   background-color: var(--color-input-bg);
   border: 1px solid var(--color-input-border);
@@ -545,8 +575,8 @@ textarea {
     box-shadow var(--duration-base) var(--ease-out-quint);
 }
 
-input:not(.tag-input):focus,
-select:focus,
+input:not(.tag-input):not(.search-input):focus,
+select:not(.search-mode-select):focus,
 textarea:focus {
   border-color: var(--color-focus-ring);
   box-shadow: 0 0 0 3px var(--color-accent-glow);

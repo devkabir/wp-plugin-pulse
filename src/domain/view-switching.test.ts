@@ -68,9 +68,9 @@ describe('view switching and data preservation', () => {
     setActiveView('table');
   });
 
-  it('preserves active tag, filter query, sort key, sort direction, and loaded data when switching to cards view', () => {
+  it('preserves active query, filter query, sort key, sort direction, and loaded data when switching to cards view', () => {
     expect(appState.activeView).toBe('table');
-    expect(appState.activeTag).toBe('form-builder');
+    expect(appState.activeQuery).toEqual({ mode: 'tag', value: 'form-builder' });
     expect(appState.query).toBe('forms');
     expect(appState.sortKey).toBe('activeInstalls');
     expect(appState.sortDirection).toBe('desc');
@@ -80,7 +80,7 @@ describe('view switching and data preservation', () => {
     setActiveView('cards');
 
     expect(appState.activeView).toBe('cards');
-    expect(appState.activeTag).toBe('form-builder');
+    expect(appState.activeQuery).toEqual({ mode: 'tag', value: 'form-builder' });
     expect(appState.query).toBe('forms');
     expect(appState.sortKey).toBe('activeInstalls');
     expect(appState.sortDirection).toBe('desc');

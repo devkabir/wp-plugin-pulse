@@ -78,7 +78,7 @@ export function renderPluginTable(
     tbody.replaceChildren(
       createTableErrorRow(
         state.error,
-        state.failedTag || state.activeTag,
+        state.failedQuery || state.activeQuery,
         onRetry ?? (() => document.dispatchEvent(new CustomEvent('retry-plugin-request')))
       )
     );
@@ -88,7 +88,7 @@ export function renderPluginTable(
 
   // Ready state: check if zero plugins loaded from API
   if (state.plugins.length === 0) {
-    tbody.replaceChildren(createTableEmptyTagRow(state.activeTag));
+    tbody.replaceChildren(createTableEmptyTagRow(state.activeQuery));
     updateResultsMeta(state, 0);
     return;
   }

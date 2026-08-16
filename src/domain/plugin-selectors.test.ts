@@ -79,7 +79,7 @@ describe('plugin filtering', () => {
 
   const baseState: AppState = {
     plugins: [p1, p2, p3],
-    activeTag: 'form-builder',
+    activeQuery: { mode: 'tag', value: 'form-builder' },
     query: '',
     sortKey: 'name',
     sortDirection: 'asc',
@@ -87,7 +87,7 @@ describe('plugin filtering', () => {
     status: 'ready',
     isBackgroundRefreshing: false,
     error: null,
-    failedTag: null,
+    failedQuery: null,
     page: 1,
     totalPages: 1,
     totalResults: 3,
