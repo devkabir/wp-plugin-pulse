@@ -1,12 +1,4 @@
-interface PluginRowProps {
-  name: string;
-  installsPerDay: string;
-  activeInstalls: number;
-  stars: string;
-  ratingPercent: number;
-  numberOfRatings: number;
-  supportThreads: number;
-}
+import type { NormalizedPlugin } from '../domain/plugin-types';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -25,52 +17,44 @@ function createCell(className?: string): HTMLTableCellElement {
   return cell;
 }
 
-export function createPluginRow({
-  name,
-  installsPerDay,
-  activeInstalls,
-  stars,
-  ratingPercent,
-  numberOfRatings,
-  supportThreads,
-}: PluginRowProps): HTMLTableRowElement {
+export function createPluginRow(plugin: NormalizedPlugin): HTMLTableRowElement {
   const row = document.createElement('tr');
 
   // — Plugin name cell
   const nameCell = createCell();
-  const nameEl = el('span', 'plugin-name', name);
+  const nameEl = el('span', 'plugin-name', plugin.name);
   nameCell.append(nameEl);
 
   // — Installs / day cell
   const ipDayCell = createCell('col-numeric');
-  const ipDayPrimary = el('div', 'stat-primary', `~${installsPerDay} / day`);
+  const ipDayPrimary = el('div', 'stat-primary', `~${plugin.estimatedInstallsPerDayDisplay} / day`);
   ipDayCell.append(ipDayPrimary);
 
   // — Active installs cell
   const installsCell = createCell('col-numeric');
-  const installsPrimary = el('div', 'stat-primary', activeInstalls.toLocaleString());
+  const installsPrimary = el('div', 'stat-primary', plugin.activeInstallsDisplay);
   installsCell.append(installsPrimary);
 
   // — Rating cell
   const ratingCell = createCell('col-numeric');
   const ratingWrap = el('div', 'rating-wrap');
-  const ratingScore = el('span', 'rating-score', stars);
+  const ratingScore = el('span', 'rating-score', `${plugin.ratingScoreDisplay} ★`);
   const ratingBar = el('div', 'rating-bar');
   const ratingBarFill = el('div', 'rating-bar-fill');
-  ratingBarFill.style.width = `${ratingPercent}%`;
+  ratingBarFill.style.width = `${plugin.ratingPercent}%`;
   ratingBar.append(ratingBarFill);
-  const ratingCount = el('span', 'rating-count', `${numberOfRatings.toLocaleString()} ratings`);
+  const ratingCount = el('span', 'rating-count', `${plugin.ratingCount.toLocaleString()} ratings`);
   ratingWrap.append(ratingScore, ratingBar, ratingCount);
   ratingCell.append(ratingWrap);
 
   // — Support threads cell
   const supportCell = createCell('col-numeric');
   const badgeLevel =
-    supportThreads === 0 ? 'low'
-    : supportThreads < 10 ? 'low'
-    : supportThreads < 30 ? 'medium'
+    plugin.supportThreads === 0 ? 'low'
+    : plugin.supportThreads < 10 ? 'low'
+    : plugin.supportThreads < 30 ? 'medium'
     : 'high';
-  const badge = el('span', `support-badge support-badge--${badgeLevel}`, `${supportThreads} open`);
+  const badge = el('span', `support-badge support-badge--${badgeLevel}`, `${plugin.supportThreads} open`);
   supportCell.append(badge);
 
   row.append(nameCell, ipDayCell, installsCell, ratingCell, supportCell);
