@@ -2,6 +2,7 @@ import './style.css';
 import { createIcons, Activity, Search, Sun, Moon } from 'lucide';
 import { fetchPlugins } from './api/plugins';
 import { renderPluginTable } from './components/plugin-table';
+import { renderKpiSummary } from './components/kpi-summary';
 import { appState, beginLoading, failLoading, finishLoading } from './state/app-state';
 import { initTheme } from './utils/theme';
 
@@ -13,17 +14,20 @@ async function loadPlugins(tag = 'form-builder'): Promise<void> {
   activeRequest = request;
   beginLoading(tag);
   renderPluginTable(appState);
+  renderKpiSummary(appState);
 
   try {
     const collection = await fetchPlugins(tag, 1, request.signal);
     if (request !== activeRequest) return;
     finishLoading(collection);
     renderPluginTable(appState);
+    renderKpiSummary(appState);
   } catch (error) {
     if (request.signal.aborted || request !== activeRequest) return;
     console.error(error);
     failLoading(error);
     renderPluginTable(appState);
+    renderKpiSummary(appState);
   } finally {
     if (request === activeRequest) activeRequest = null;
   }

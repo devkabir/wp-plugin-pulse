@@ -133,13 +133,20 @@ export interface KpiSummaryMetrics {
     slug: string;
     installsPerDay: number;
     installsPerDayDisplay: string;
+    /** Active installs of this leader plugin */
+    activeInstalls: number;
+    activeInstallsDisplay: string;
   } | null;
+  /** Share of total active installs held by the #1 plugin (0–100), or null */
+  dominantPluginInstallShare: number | null;
   weightedCommunityRating: number | null;
   weightedCommunityRatingDisplay: string;
   overallSupportResolutionRate: number | null;
   overallSupportResolutionRateDisplay: string;
   recentlyUpdatedCount: number; // Updated within 6 months
   recentlyUpdatedPercent: number;
+  /** Plugins not updated in 12+ months — potential gap opportunities */
+  staleCount: number;
 }
 
 export type SortKey =
