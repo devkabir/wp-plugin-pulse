@@ -82,7 +82,8 @@ function renderFeatureStatusBadge(status: FeatureStatus): HTMLElement {
     case 'unknown':
     default:
       icon.textContent = '?';
-      label.textContent = 'Unknown (need full readme)';
+      label.textContent = 'Unconfirmed';
+      badge.setAttribute('title', 'Not mentioned in available summary or description');
       break;
   }
 

@@ -3,11 +3,13 @@ import { extractFeatureForPlugin } from './feature-extractor';
 import type {
   ComparisonOpportunity,
   ComparisonRow,
+  ComparisonValue,
   FeatureComparison,
   FeatureDefinition,
   FreshnessCategory,
   NormalizedPlugin,
   PluginComparison,
+  PluginMomentum,
 } from './plugin-types';
 import { compareTags, normalizeTagSlug } from './tag-intelligence';
 
@@ -25,6 +27,37 @@ function formatFreshness(freshness: FreshnessCategory): string {
     default:
       return 'Unknown';
   }
+}
+
+function formatMomentumComparisonValue(slug: string, momentum?: PluginMomentum): ComparisonValue {
+  if (!momentum || !momentum.hasSufficientData) {
+    return {
+      slug,
+      raw: null,
+      display: 'Insufficient snapshot history',
+      note: momentum?.reason || 'Requires at least 2 observations across 7+ days.',
+      status: 'insufficient_data',
+    };
+  }
+
+  const directionSymbol =
+    momentum.direction === 'rising' ? '↗ Rising' : momentum.direction === 'declining' ? '↘ Declining' : '→ Flat';
+
+  const gapNote = momentum.hasGaps ? `, ${momentum.gaps.length} gap(s)` : '';
+  const dateRange = `${momentum.startObservationDate?.slice(0, 10)} to ${momentum.endObservationDate?.slice(0, 10)}`;
+
+  return {
+    slug,
+    raw: momentum.downloadPacePerDay,
+    display: `${directionSymbol} (${momentum.downloadPacePerDayDisplay}, ${momentum.intervalDays}d)`,
+    note: `Observed ${dateRange} (${momentum.confidence} confidence${gapNote}). Start/End snapshots linked.`,
+    status:
+      momentum.direction === 'rising'
+        ? 'advantage'
+        : momentum.direction === 'declining'
+          ? 'disadvantage'
+          : 'neutral',
+  };
 }
 
 /**
@@ -206,9 +239,10 @@ function buildMaintenanceRows(
  */
 function buildTrustRows(
   subject: NormalizedPlugin,
-  competitors: readonly NormalizedPlugin[]
+  competitors: readonly NormalizedPlugin[],
+  momentumBySlug?: Record<string, PluginMomentum>
 ): ComparisonRow[] {
-  return [
+  const rows: ComparisonRow[] = [
     {
       key: 'active_installs',
       label: 'Active Installations',
@@ -243,6 +277,29 @@ function buildTrustRows(
         status: 'neutral',
       })),
     },
+  ];
+
+  if (momentumBySlug) {
+    const subjectMom = momentumBySlug[subject.slug];
+    const compMomList = competitors.map((comp) => momentumBySlug[comp.slug]);
+    const hasAnyMomentum =
+      subjectMom?.hasSufficientData || compMomList.some((m) => m?.hasSufficientData);
+
+    if (hasAnyMomentum || subjectMom || compMomList.some(Boolean)) {
+      rows.push({
+        key: 'observed_momentum',
+        label: 'Observed Momentum',
+        subject: formatMomentumComparisonValue(subject.slug, subjectMom),
+        competitors: competitors.map((comp) =>
+          formatMomentumComparisonValue(comp.slug, momentumBySlug[comp.slug])
+        ),
+        insight:
+          'Calculated strictly between stored snapshot observations with at least 7 elapsed days.',
+      });
+    }
+  }
+
+  rows.push(
     {
       key: 'rating_score',
       label: 'Community Rating',
@@ -332,8 +389,10 @@ function buildTrustRows(
         display: comp.lifetimeDownloadsDisplay,
         status: 'neutral',
       })),
-    },
-  ];
+    }
+  );
+
+  return rows;
 }
 
 /**
@@ -506,7 +565,8 @@ function generateOpportunities(
 export function comparePlugins(
   subject: NormalizedPlugin,
   competitors: readonly NormalizedPlugin[],
-  customDictionary?: readonly FeatureDefinition[]
+  customDictionary?: readonly FeatureDefinition[],
+  momentumBySlug?: Record<string, PluginMomentum>
 ): PluginComparison {
   if (!subject) {
     throw new Error('A valid subject plugin is required for comparison.');
@@ -547,8 +607,8 @@ export function comparePlugins(
   // 4. Maintenance rows
   const maintenance = buildMaintenanceRows(subject, safeCompetitors);
 
-  // 5. Trust rows (ratings, support, installs, lifetime pace)
-  const trust = buildTrustRows(subject, safeCompetitors);
+  // 5. Trust rows (ratings, support, installs, lifetime pace, observed momentum)
+  const trust = buildTrustRows(subject, safeCompetitors, momentumBySlug);
 
   // 6. Strategic opportunities
   const opportunities = generateOpportunities(subject, safeCompetitors, features, tags);

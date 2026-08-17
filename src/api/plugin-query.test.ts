@@ -11,8 +11,8 @@ import { PluginRequestError } from '../domain/error-classifier';
 
 describe('WordPress.org endpoint builder', () => {
   it('defines correct field constants', () => {
-    expect(COLLECTION_FIELDS.description).toBe(0);
-    expect(COLLECTION_FIELDS.sections).toBe(0);
+    expect(COLLECTION_FIELDS.description).toBe(1);
+    expect(COLLECTION_FIELDS.sections).toBe(1);
     expect(SLUG_FIELDS.description).toBe(1);
     expect(SLUG_FIELDS.sections).toBe(1);
   });
@@ -25,8 +25,8 @@ describe('WordPress.org endpoint builder', () => {
     expect(url.searchParams.get('request[tag]')).toBe('form-builder');
     expect(url.searchParams.get('request[per_page]')).toBe('100');
     expect(url.searchParams.get('request[page]')).toBe('2');
-    expect(url.searchParams.get('request[fields][description]')).toBe('0');
-    expect(url.searchParams.get('request[fields][sections]')).toBe('0');
+    expect(url.searchParams.get('request[fields][description]')).toBe('1');
+    expect(url.searchParams.get('request[fields][sections]')).toBe('1');
     expect(url.searchParams.get('request[fields][short_description]')).toBe('1');
     expect(url.searchParams.get('request[fields][icons]')).toBe('1');
     expect(url.searchParams.get('request[fields][active_installs]')).toBe('1');
@@ -38,8 +38,8 @@ describe('WordPress.org endpoint builder', () => {
     expect(url.searchParams.get('request[search]')).toBe('contact forms & blocks');
     expect(url.searchParams.get('request[per_page]')).toBe('100');
     expect(url.searchParams.get('request[page]')).toBe('1');
-    expect(url.searchParams.get('request[fields][description]')).toBe('0');
-    expect(url.searchParams.get('request[fields][sections]')).toBe('0');
+    expect(url.searchParams.get('request[fields][description]')).toBe('1');
+    expect(url.searchParams.get('request[fields][sections]')).toBe('1');
   });
 
   it('constructs slug query parameters with descriptions/sections enabled', () => {

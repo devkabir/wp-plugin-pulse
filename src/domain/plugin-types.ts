@@ -308,3 +308,92 @@ export type SortKey =
   | 'lastUpdated';
 
 export type SortDirection = 'asc' | 'desc';
+
+/**
+ * Historical snapshot representing an observed state of a plugin at a point in time.
+ */
+export interface PluginSnapshot {
+  slug: string;
+  observedAt: string;
+  activeInstalls: number;
+  downloaded: number;
+  rating: number;
+  ratingCount: number;
+  supportThreads: number;
+  supportThreadsResolved: number;
+  version: string;
+  testedWordPress: string | null;
+  lastUpdatedAt: string | null;
+  contentHash: string;
+}
+
+export type MomentumConfidence = 'high' | 'medium' | 'low';
+export type MomentumDirection = 'rising' | 'declining' | 'flat' | 'insufficient_data';
+export type TrajectoryDirection = 'rising' | 'declining' | 'flat';
+
+export interface SnapshotGap {
+  startDate: string;
+  endDate: string;
+  gapDays: number;
+  missingDaysCount: number;
+}
+
+export interface BandTransition {
+  from: number;
+  to: number;
+  crossed: boolean;
+  direction: TrajectoryDirection;
+}
+
+export interface PluginMomentum {
+  slug: string;
+  hasSufficientData: boolean;
+  status: 'ready' | 'insufficient_observations' | 'insufficient_interval';
+  reason?: string;
+  startSnapshot: PluginSnapshot | null;
+  endSnapshot: PluginSnapshot | null;
+  observationCount: number;
+  startObservationDate: string | null;
+  endObservationDate: string | null;
+  intervalDays: number;
+
+  // Deltas
+  activeInstallsDelta: number;
+  bandTransition: BandTransition;
+  downloadedDelta: number;
+  downloadPacePerDay: number;
+  downloadPacePerDayDisplay: string;
+  ratingDelta: number;
+  ratingCountDelta: number;
+  supportThreadsDelta: number;
+  supportThreadsResolvedDelta: number;
+  supportResolutionRateDelta: number | null;
+
+  // Tracked changes
+  versionChanged: boolean;
+  previousVersion: string | null;
+  currentVersion: string | null;
+  testedWordPressChanged: boolean;
+  previousTestedWordPress: string | null;
+  currentTestedWordPress: string | null;
+  contentChanged: boolean;
+
+  // Meaningful trajectories
+  direction: MomentumDirection;
+  activeInstallsTrajectory: TrajectoryDirection;
+  downloadTrajectory: TrajectoryDirection;
+  ratingTrajectory: TrajectoryDirection;
+
+  // Precision and confidence
+  confidence: MomentumConfidence;
+  confidenceScore: number;
+  confidenceReason: string;
+
+  // Observation cadence & gaps
+  hasGaps: boolean;
+  gaps: SnapshotGap[];
+  maxGapDays: number;
+  expectedObservations: number;
+  actualObservations: number;
+  coverageRatio: number;
+}

@@ -288,4 +288,96 @@ describe('PR 5 — Plugin Comparison Domain Calculations', () => {
       expect(comparison.features.some((f) => f.featureId === 'coupons-discounts')).toBe(true);
     });
   });
+
+  describe('PR 11 — Historical Momentum in Comparison', () => {
+    it('separately labels Lifetime Install Pace and Observed Momentum', () => {
+      const subject = createMockPlugin({ slug: 'my-form', name: 'My Form' });
+      const comp = createMockPlugin({ slug: 'comp-form', name: 'Comp Form' });
+
+      const mockMomentum = {
+        'my-form': {
+          slug: 'my-form',
+          hasSufficientData: true,
+          status: 'ready' as const,
+          startSnapshot: {
+            slug: 'my-form',
+            observedAt: '2026-08-01T00:00:00.000Z',
+            activeInstalls: 50000,
+            downloaded: 100000,
+            rating: 90,
+            ratingCount: 100,
+            supportThreads: 10,
+            supportThreadsResolved: 9,
+            version: '1.0.0',
+            testedWordPress: '6.5',
+            lastUpdatedAt: null,
+            contentHash: 'hash1',
+          },
+          endSnapshot: {
+            slug: 'my-form',
+            observedAt: '2026-08-15T00:00:00.000Z',
+            activeInstalls: 50000,
+            downloaded: 114000,
+            rating: 90,
+            ratingCount: 105,
+            supportThreads: 12,
+            supportThreadsResolved: 11,
+            version: '1.0.0',
+            testedWordPress: '6.5',
+            lastUpdatedAt: null,
+            contentHash: 'hash1',
+          },
+          observationCount: 15,
+          startObservationDate: '2026-08-01T00:00:00.000Z',
+          endObservationDate: '2026-08-15T00:00:00.000Z',
+          intervalDays: 14,
+          activeInstallsDelta: 0,
+          bandTransition: { from: 50000, to: 50000, crossed: false, direction: 'flat' as const },
+          downloadedDelta: 14000,
+          downloadPacePerDay: 1000,
+          downloadPacePerDayDisplay: '1,000 / day',
+          ratingDelta: 0,
+          ratingCountDelta: 5,
+          supportThreadsDelta: 2,
+          supportThreadsResolvedDelta: 2,
+          supportResolutionRateDelta: 0,
+          versionChanged: false,
+          previousVersion: '1.0.0',
+          currentVersion: '1.0.0',
+          testedWordPressChanged: false,
+          previousTestedWordPress: '6.5',
+          currentTestedWordPress: '6.5',
+          contentChanged: false,
+          direction: 'rising' as const,
+          activeInstallsTrajectory: 'flat' as const,
+          downloadTrajectory: 'rising' as const,
+          ratingTrajectory: 'flat' as const,
+          confidence: 'high' as const,
+          confidenceScore: 0.95,
+          confidenceReason: 'Consistent daily observations',
+          hasGaps: false,
+          gaps: [],
+          maxGapDays: 0,
+          expectedObservations: 15,
+          actualObservations: 15,
+          coverageRatio: 1.0,
+        },
+      };
+
+      const comparison = comparePlugins(subject, [comp], undefined, mockMomentum);
+
+      const lifetimeRow = comparison.trust.find((r) => r.key === 'lifetime_install_pace');
+      const momentumRow = comparison.trust.find((r) => r.key === 'observed_momentum');
+
+      expect(lifetimeRow).toBeDefined();
+      expect(lifetimeRow?.label).toBe('Lifetime Install Pace');
+      expect(lifetimeRow?.subject.note).toContain('Reported active installs divided by days');
+
+      expect(momentumRow).toBeDefined();
+      expect(momentumRow?.label).toBe('Observed Momentum');
+      expect(momentumRow?.subject.display).toContain('↗ Rising');
+      expect(momentumRow?.subject.note).toContain('2026-08-01 to 2026-08-15');
+      expect(momentumRow?.competitors[0].status).toBe('insufficient_data');
+    });
+  });
 });

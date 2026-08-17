@@ -8,8 +8,8 @@ const API_PATH = '/api/plugins';
 const pendingRequests = new Map();
 
 export const COLLECTION_FIELDS = {
-  description: 0,
-  sections: 0,
+  description: 1,
+  sections: 1,
   tested: 1,
   requires: 1,
   rating: 1,
@@ -19,7 +19,7 @@ export const COLLECTION_FIELDS = {
   last_updated: 1,
   added: 1,
   tags: 1,
-  compatibility: 0,
+  compatibility: 1,
   homepage: 1,
   donate_link: 1,
   icons: 1,
@@ -43,7 +43,7 @@ export const SLUG_FIELDS = {
   last_updated: 1,
   added: 1,
   tags: 1,
-  compatibility: 0,
+  compatibility: 1,
   homepage: 1,
   donate_link: 1,
   icons: 1,
